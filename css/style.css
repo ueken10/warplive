@@ -320,7 +320,15 @@ body {
    ========================================================================= */
 
 /* --- スマホ縦画面（デフォルト） --- */
-/* 上部の設定で対応済み */
+@media (max-width: 767px) {
+  .subtitle {
+    bottom: 110px;
+  }
+
+  .status {
+    bottom: 16px;
+  }
+}
 
 /* --- スマホ横画面 --- */
 @media (orientation: landscape) and (max-height: 500px) {
@@ -365,5 +373,15 @@ body {
 
   .status {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  @media (max-width: 767px) {
+    .subtitle {
+      bottom: calc(110px + env(safe-area-inset-bottom));
+    }
+
+    .status {
+      bottom: calc(16px + env(safe-area-inset-bottom));
+    }
   }
 }
