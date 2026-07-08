@@ -322,11 +322,11 @@ body {
 /* --- スマホ縦画面（デフォルト） --- */
 @media (max-width: 767px) {
   .subtitle {
-    bottom: 110px;
+    bottom: 140px;
   }
 
   .status {
-    bottom: 16px;
+    bottom: 36px;
   }
 }
 
@@ -377,11 +377,11 @@ body {
 
   @media (max-width: 767px) {
     .subtitle {
-      bottom: calc(110px + env(safe-area-inset-bottom));
+      bottom: calc(140px + env(safe-area-inset-bottom));
     }
 
     .status {
-      bottom: calc(16px + env(safe-area-inset-bottom));
+      bottom: calc(36px + env(safe-area-inset-bottom));
     }
   }
 }
