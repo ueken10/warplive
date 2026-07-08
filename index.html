@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>WarpLive</title>
+  <link rel="stylesheet" href="./css/style.css" />
+  <!-- import map: THREE.js単一インスタンス保証（esm.sh *プレフィックスで依存バンドル無効化） -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://esm.sh/three@0.169.0",
+      "three/addons/": "https://esm.sh/three@0.169.0/examples/jsm/",
+      "@pixiv/three-vrm": "https://esm.sh/*@pixiv/three-vrm@3.4.0",
+      "@pixiv/three-vrm-animation": "https://esm.sh/*@pixiv/three-vrm-animation@3.4.0"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 3Dアバター描画用Canvas（Phase 2でThree.jsが描画） -->
+  <canvas id="avatar-canvas"></canvas>
+
+  <!-- 上部バー: ハンバーガーメニュー / フルスクリーン / 時計 -->
+  <header id="top-bar">
+    <button id="menu-toggle" class="icon-button" type="button" aria-label="メニュー" title="メニュー">
+      <span class="hamburger-icon" aria-hidden="true"></span>
+    </button>
+
+    <div id="top-right">
+      <button id="fullscreen-toggle" class="icon-button" type="button" aria-label="フルスクリーン" title="フルスクリーン">
+        <span class="fullscreen-icon" aria-hidden="true">⛶</span>
+      </button>
+      <div id="clock" class="clock" aria-label="現在時刻">--:--</div>
+    </div>
+  </header>
+
+  <!-- 字幕エリア（下部中央） -->
+  <div id="subtitle" class="subtitle" aria-live="polite"></div>
+
+  <!-- ステータスインジケータ（最下部） -->
+  <div id="status" class="status" role="status">○ 待機中 — 「ねえ、リリ」と話しかけてください</div>
+
+  <!-- ハンバーガーメニューパネル（スライドイン式） -->
+  <aside id="menu-panel" class="menu-panel" aria-hidden="true">
+    <h2 class="menu-title">設定</h2>
+
+    <!-- APIキー警告 -->
+    <p class="api-warning" role="alert">
+      APIキーはローカルでのみ使用し、公開しないでください
+    </p>
+
+    <!-- Gemini APIキー -->
+    <label class="menu-item" for="api-key-input">
+      <span class="menu-label">Gemini APIキー</span>
+      <input id="api-key-input" type="password" placeholder="APIキーを入力" autocomplete="off" />
+    </label>
+
+    <!-- アバター選択 -->
+    <label class="menu-item" for="avatar-select">
+      <span class="menu-label">アバター選択</span>
+      <select id="avatar-select">
+        <option value="asaka_lily">浅香リリ</option>
+        <option value="miura_luca">三浦ルカ</option>
+        <option value="matsuda_emma">松田エマ</option>
+      </select>
+    </label>
+
+    <!-- 字幕表示トグル -->
+    <label class="menu-item" for="subtitle-toggle">
+      <span class="menu-label">字幕表示</span>
+      <input id="subtitle-toggle" type="checkbox" checked />
+    </label>
+
+    <!-- 時計表示トグル -->
+    <label class="menu-item" for="clock-toggle">
+      <span class="menu-label">時計表示</span>
+      <input id="clock-toggle" type="checkbox" checked />
+    </label>
+
+    <!-- 言語選択（日本語 / 英語のみ） -->
+    <label class="menu-item" for="language-select">
+      <span class="menu-label">言語選択</span>
+      <select id="language-select">
+        <option value="ja-JP">日本語</option>
+        <option value="en-US">English</option>
+      </select>
+    </label>
+
+    <!-- フルスクリーン -->
+    <button id="fullscreen-button" class="menu-button" type="button">フルスクリーン</button>
+  </aside>
+
+  <!-- メニュー開閉時のオーバーレイ -->
+  <div id="menu-overlay" class="menu-overlay" aria-hidden="true"></div>
+
+  <!-- エントリポイント -->
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
