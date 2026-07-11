@@ -117,21 +117,21 @@ js/gemini-live.js, js/config.js（更新）, js/main.js（更新）
 
 ### タスク
 
-- [ ] `js/wake-word.js` 作成
-  - `WakeWordManager` クラス実装
-  - `SpeechRecognition` 初期化（`continuous: true`, `interimResults: true`, `lang: 'ja-JP'`）
-  - 選択中アバターのウェイクワードを取得して検出
-  - ウェイクワード検出時: `onWakeWordDetected` コールバック発火
-  - ウェイクワード以降の発話をバッファリング
-  - Web Speech API非対応時のフォールバックフラグ
-- [ ] `js/main.js` にセッションライフサイクル実装
-  - ウェイクワード検出 → `GeminiLive.connect()` → `setup()`
-  - マイク音声取得（`getUserMedia`）→ AudioWorklet/MediaRecorderで16kHz PCM化 → `sendAudioChunk()`
-  - アイドル8秒タイマー管理（発話検出で延長、タイムアウトで切断）
-  - セッション切断 → ウェイクワード待機に復帰
-  - ステータスインジケータ更新（待機中/接続中/応答中/エラー）
-- [ ] `js/config.js` に定数追加（アイドルタイムアウト値: 8秒）
-- [ ] 動作確認: 「ねえ、リリ」と話しかけるとセッションが開始し、アイドル8秒で切断される
+- [x] `js/wake-word.js` 作成
+  - [x] `WakeWordManager` クラス実装
+  - [x] `SpeechRecognition` 初期化（`continuous: true`, `interimResults: true`, `lang: 'ja-JP'`）
+  - [x] 選択中アバターのウェイクワードを取得して検出
+  - [x] ウェイクワード検出時: `onWakeWordDetected` コールバック発火
+  - [x] ウェイクワード以降の発話をバッファリング
+  - [x] Web Speech API非対応時のフォールバックフラグ
+- [x] `js/main.js` にセッションライフサイクル実装
+  - [x] ウェイクワード検出 → `GeminiLive.connect()` → `setup()`
+  - [x] マイク音声取得（`getUserMedia`）→ AudioWorklet/MediaRecorderで16kHz PCM化 → `sendAudioChunk()`
+  - [x] アイドル8秒タイマー管理（発話検出で延長、タイムアウトで切断）
+  - [x] セッション切断 → ウェイクワード待機に復帰
+  - [x] ステータスインジケータ更新（待機中/接続中/応答中/エラー）
+- [x] `js/config.js` に定数追加（アイドルタイムアウト値: 8秒）
+- [x] 動作確認: 「ねえ、リリ」と話しかけるとセッションが開始し、アイドル8秒で切断される
 
 ### 成果物
 
@@ -149,11 +149,11 @@ js/wake-word.js, js/main.js（更新）, js/config.js（更新）
 
 ### タスク
 
-- [ ] `js/gemini-live.js` の `onAudioChunk` 処理を `js/main.js` に実装
+- [x] `js/gemini-live.js` の `onAudioChunk` 処理を `js/main.js` に実装
   - PCMチャンク → AudioBuffer変換（16kHz → AudioContext サンプルレートにリサンプリング）
   - 順次再生キュー管理
   - `interrupted` 検出時: 再生キューをクリアし即座に停止
-- [ ] 動作確認: ウェイクワード後に話しかけると、AI音声が再生される
+- [x] 動作確認: ウェイクワード後に話しかけると、AI音声が再生される
 
 ### 成果物
 
