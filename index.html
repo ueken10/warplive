@@ -61,7 +61,12 @@
     <!-- Gemini APIキー -->
     <label class="menu-item" for="api-key-input">
       <span class="menu-label">Gemini APIキー</span>
-      <input id="api-key-input" type="password" placeholder="APIキーを入力" autocomplete="off" />
+      <div class="api-key-field">
+        <input id="api-key-input" type="password" placeholder="APIキーを入力" autocomplete="off" />
+        <button id="api-key-toggle" class="api-key-toggle" type="button" aria-label="APIキーを表示" title="APIキーを表示">
+          <span class="eye-icon" aria-hidden="true">👁</span>
+        </button>
+      </div>
     </label>
 
     <!-- アバター選択 -->

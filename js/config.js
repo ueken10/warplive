@@ -19,6 +19,16 @@ export const IDLE_TIMEOUT_SEC = 30;
 export const RECONNECT_DELAY_MS = 5000;
 
 /**
+ * 言語別ウェイクワードマッピング
+ * ※アバター共通。アバター切替時はウェイクワードを変更しない。
+ * @type {Object<string, string[]>}
+ */
+export const WAKE_WORDS_BY_LANG = {
+  "ja-JP": ["もしもし", "こんにちは"],
+  "en-US": ["Hey", "Hello"],
+};
+
+/**
  * アバター別設定
  *
  * @typedef {Object} AvatarConfig
@@ -26,7 +36,6 @@ export const RECONNECT_DELAY_MS = 5000;
  * @property {string} name      表示名
  * @property {string} gender    性別
  * @property {string} voice     Live API prebuilt voice名
- * @property {string[]} wakeWords  ウェイクワード配列（日本語・英語）
  */
 export const AVATARS = {
   asaka_lily: {
@@ -34,21 +43,18 @@ export const AVATARS = {
     name: "浅香リリ",
     gender: "female",
     voice: "Leda",
-    wakeWords: ["ねえ、リリ", "ねえリリ", "Hey Lily"],
   },
   miura_luca: {
     file: "miura_luca.vrm",
     name: "三浦ルカ",
     gender: "male",
     voice: "Orus",
-    wakeWords: ["ねえ、ルカ", "ねえルカ", "Hey Luca"],
   },
   matsuda_emma: {
     file: "matsuda_emma.vrm",
     name: "松田エマ",
     gender: "female",
     voice: "Aoede",
-    wakeWords: ["ねえ、エマ", "ねえエマ", "Hey Emma"],
   },
 };
 
@@ -78,6 +84,9 @@ export const STORAGE_KEY_LANGUAGE = "warplive:language";
 
 /** @type {string} ローカルストレージのアバター保存キー */
 export const STORAGE_KEY_AVATAR = "warplive:avatar";
+
+/** @type {string} ローカルストレージのウェイクワード保存キー */
+export const STORAGE_KEY_WAKE_WORD = "warplive:wakeWord";
 
 /* =========================================================================
  * Phase 2: 3Dアバター表示関連

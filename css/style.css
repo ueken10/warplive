@@ -366,6 +366,49 @@ body {
   visibility: visible;
 }
 
+/* --- APIキー入力欄 --- */
+.api-key-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.api-key-field input[type="password"],
+.api-key-field input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.api-key-toggle {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.api-key-toggle:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.api-key-toggle:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.api-key-toggle.visible {
+  background: rgba(91, 155, 213, 0.35);
+}
+
 /* =========================================================================
    レスポンシブ対応
    ========================================================================= */

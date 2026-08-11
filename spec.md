@@ -79,10 +79,12 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
 | ------ | ------ |
 | API | Gemini Live API（`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`） |
 | 認証 | URLパラメータ `?key=API_KEY`。APIキーはユーザーがUIで入力（ローカルストレージに保存） |
-| モデル | `gemini-2.0-flash-live-001`（または最新のLive API対応モデル） |
-| 音声入力 | 16kHz, 16-bit PCM, mono（ブラウザマイク → MediaRecorder / AudioWorklet でPCM化） |
-| 音声出力 | Live APIから受信したPCMチャンクをAudioBufferに変換して再生 |
+| モデル | `models/gemini-2.5-flash-native-audio-latest`（このAPIキーで`bidiGenerateContent`に対応しているモデルは現状これのみ） |
+| 音声入力 | 16kHz, 16-bit PCM, mono（ブラウザマイク → ScriptProcessorNode でPCM化） |
+| 音声出力 | Live APIから受信した24kHz PCMチャンクをAudioBufferに変換して再生 |
 | APIキー警告 | ハンバーガーメニューのAPIキー設定項目の上に「APIキーはローカルでのみ使用し、公開しないでください」の警告を表示 |
+
+> **注意**: `gemini-3.1-flash-live-preview` 等、他のLive API対応モデルはこのAPIキーでは利用できない場合があります。利用可能なモデルはAPIキーごとに異なり、実行時にREST APIで確認してください。
 
 #### 2.2.2 ウェイクワード（方式B: ローカル検出 + オンデマンド接続）
 
@@ -91,9 +93,10 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
 | 検出方式 | Web Speech API `SpeechRecognition`（`continuous: true`, `interimResults: true`）で常時ローカル認識 |
 | ウェイクワード | 選択中のアバターに応じて切り替え（下表参照） |
 | 検出後の動作 | ① Live APIセッションを開始 ② ウェイクワード以降の発話をバッファリングしてLive APIに送信 |
+| 結果の蓄積リセット | `continuous: true` で `event.results` に全結果が蓄積されると、`isFinal` の結果が出た後も古い結果が残り、新しい発話が古いテキストに埋もれてしまう。ウェイクワードが検出されなかった `isFinal` 時（発話確定）に認識を一度停止し、自動再開させることで結果の蓄積をリセットする |
 | 一時応答 | ウェイクワード検出直後、Live API接続完了を待たずに `SpeechSynthesis` で短い一時応答（「はい」等）を即座に発話。アバターは `[greeted]` 表情 + VRMA_02 (Greeting) を再生。Live API接続完了後にユーザー発話の送信を開始。一時応答の発話中にLive API音声が再生されないようミュート制御 |
-| 連続対話 | ウェイクワード検出後、**アイドル8秒間**はLive APIセッションを維持。新たな発話があれば延長 |
-| セッション切断 | アイドル8秒経過でLive APIセッションを切断し、ウェイクワード待ちに戻る |
+| 連続対話 | ウェイクワード検出後、**アイドル30秒間**はLive APIセッションを維持。新たな発話があれば延長 |
+| セッション切断 | アイドル30秒経過でLive APIセッションを切断し、ウェイクワード待ちに戻る |
 | 無料枠配慮 | 常時接続せず、ウェイクワード検出時のみ接続するためAPI消費を最小化 |
 | フォールバック | Web Speech API非対応ブラウザでは、タップ/ボタン押下でセッション開始するフォールバックUIを提供 |
 
@@ -101,18 +104,18 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
 
 | アバターファイル | 名前 | ウェイクワード |
 | ------------------ | ------ | ---------------- |
-| `asaka_lily.vrm` | 浅香リリ | 「ねえ、リリ」「Hey Lily」 |
-| `matsuda_emma.vrm` | 松田エマ | 「ねえ、エマ」「Hey Emma」 |
-| `miura_luca.vrm` | 三浦ルカ | 「ねえ、ルカ」「Hey Luca」 |
+| `asaka_lily.vrm` | 浅香リリ | 「もしもし」「こんにちは」「Hey」「Hello」 |
+| `matsuda_emma.vrm` | 松田エマ | 「もしもし」「こんにちは」「Hey」「Hello」 |
+| `miura_luca.vrm` | 三浦ルカ | 「もしもし」「こんにちは」「Hey」「Hello」 |
 
-※カスタムVRMインポート時はデフォルト（リリ）のウェイクワードを使用。
+※すべてのアバターで共通のウェイクワードを使用。ウェイクワードは言語（日本語/英語）に応じて自動で切り替わる。
 
 **シーケンス図:**
 
 ```
 [常時] Web Speech API でローカル音声認識中
          │
-         ├─ ウェイクワード検出（例: 「ねえ、リリ」）
+         ├─ ウェイクワード検出（例: 「もしもし」「こんにちは」）
          │     │
          │     ├─ 一時応答（SpeechSynthesis で「はい」を即座に発話 + Greetingアニメーション）
          │     │
@@ -120,9 +123,9 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
          │     ├─ ウェイクワード以降の発話をLive APIに送信
          │     ├─ Live APIからの音声応答を再生 + リップシンク
          │     │
-         │     └─ アイドル8秒間維持
+         │     └─ アイドル30秒間維持
          │           ├─ 新たな発話あり → セッション延長
-         │           └─ アイドル8秒経過 → セッション切断 → ウェイクワード待ちに戻る
+         │           └─ アイドル30秒経過 → セッション切断 → ウェイクワード待ちに戻る
          │
          └─ ウェイクワード未検出 → 何もしない（API消費ゼロ）
 ```
@@ -295,7 +298,7 @@ Live APIの `setup` メッセージの `tools` で以下の関数を定義する
 
 | 言語 | prebuilt voice |
 | ------ | ---------------- |
-| 日本語 | アバター固有（リリ: `Puck` / エマ: `Aoede` / ルカ: `Orus`） |
+| 日本語 | アバター固有（リリ: `Leda` / エマ: `Aoede` / ルカ: `Orus`） |
 | 英語 | `Charon` |
 | 中国語 | `Fenrir` |
 | 台湾華語 | `Kore` |
@@ -307,17 +310,17 @@ Live APIの `setup` メッセージの `tools` で以下の関数を定義する
 
 **言語 → ウェイクワード・SpeechRecognition lang マッピング:**
 
-| 言語 | SpeechRecognition `lang` | リリ | エマ | ルカ |
-| ------ | -------------------------- | ------ | ------ | ------ |
-| 日本語 | `ja-JP` | 「ねえ、リリ」 | 「ねえ、エマ」 | 「ねえ、ルカ」 |
-| 英語 | `en-US` | 「Hey Lily」 | 「Hey Emma」 | 「Hey Luca」 |
-| 中国語 | `cmn-CN` | 「嘿，莉莉」 | 「嘿，艾玛」 | 「嘿，卢卡」 |
-| 台湾華語 | `cmn-TW` | 「嘿，莉莉」 | 「嘿，艾瑪」 | 「嘿，盧卡」 |
-| 韓国語 | `ko-KR` | 「이봐, 릴리」 | 「이봐, 엠마」 | 「이봐, 루카」 |
-| マレー語 | `ms-MY` | 「Hei Lily」 | 「Hei Emma」 | 「Hei Luca」 |
-| フィリピン語 | `fil-PH` | 「Hoy Lily」 | 「Hoy Emma」 | 「Hoy Luca」 |
+| 言語 | SpeechRecognition `lang` | ウェイクワード |
+| ------ | -------------------------- | ------ |
+| 日本語 | `ja-JP` | 「もしもし」「こんにちは」 |
+| 英語 | `en-US` | 「Hey」「Hello」 |
+| 中国語 | `cmn-CN` | 「你好」 |
+| 台湾華語 | `cmn-TW` | 「你好」 |
+| 韓国語 | `ko-KR` | 「여보세요」 |
+| マレー語 | `ms-MY` | 「Hai」 |
+| フィリピン語 | `fil-PH` | 「Kamusta」 |
 
-※ウェイクワードは`config.js`で管理し、言語切替時に`WakeWordManager.setWakeWords()`へ反映。カスタムVRMインポート時はデフォルト（リリ）のウェイクワードを使用。
+※ウェイクワードは`config.js`で管理し、言語切替時に`WakeWordManager.setWakeWords()`へ反映。すべてのアバターで共通のウェイクワードを使用する。
 
 ### 2.7 時計表示
 
@@ -407,7 +410,7 @@ Live APIの `setup` メッセージの `tools` で以下の関数を定義する
 
 | アバターファイル | 名前 | 性別 | 性格 | 話し方 | デフォルト音声 |
 | ------------------ | ------ | ------ | ------ | -------- | ---------------- |
-| `asaka_lily.vrm` | 浅香リリ（Lily） | 女性 | 明るく親しみやすい。丁寧語ベースかつフレンドリー | 一回の発言は短く（2〜3文以内）。必要に応じて質問を投げ返す | `Puck` |
+| `asaka_lily.vrm` | 浅香リリ（Lily） | 女性 | 明るく親しみやすい。丁寧語ベースかつフレンドリー | 一回の発言は短く（2〜3文以内）。必要に応じて質問を投げ返す | `Leda` |
 | `matsuda_emma.vrm` | 松田エマ（Emma） | 女性 | 明るく親しみやすい。丁寧語ベースかつフレンドリー | 一回の発言は短く（2〜3文以内）。必要に応じて質問を投げ返す | `Aoede` |
 | `miura_luca.vrm` | 三浦ルカ（Luca） | 男性 | 明るく親しみやすい。丁寧語ベースかつフレンドリー | 一回の発言は短く（2〜3文以内）。必要に応じて質問を投げ返す | `Fenrir` |
 
@@ -496,7 +499,7 @@ Live APIの `setup` メッセージの `tools` で以下の関数を定義する
 
 | 状態 | 表示 |
 | ------ | ------ |
-| ウェイクワード待機中 | `○ 待機中 — 「ねえ、{name}」と話しかけてください` |
+| ウェイクワード待機中 | `○ 待機中 — 「もしもし」と話しかけてください` |
 | 一時応答中 | `● 応答中 — はい` |
 | Live API接続中 | `● 接続中 — 話しかけてください` |
 | AI応答中 | `● 応答中 — {name}が話しています` |
@@ -535,9 +538,9 @@ import { VRMAnimationLoaderPlugin } from 'https://esm.sh/@pixiv/three-vrm-animat
      │           │     │
      │           │     └─ Live API WebSocket へ送信 (realtimeInput)
      │           │
-     │           └─ Live API から音声受信 (audioChunk)
+     │           └─ Live API から音声受信
      │                 │
-     │                 ├─ AudioBuffer 変換 → AudioContext で再生
+     │                 ├─ AudioBuffer 変換（24kHz PCM） → AudioContext で再生
      │                 │
      │                 └─ AnalyserNode → 振幅取得 → VRM blendShape 'aa'
      │
@@ -555,15 +558,15 @@ import { VRMAnimationLoaderPlugin } from 'https://esm.sh/@pixiv/three-vrm-animat
 ```json
 {
   "setup": {
-    "model": "models/gemini-2.0-flash-live-001",
+    "model": "models/gemini-2.5-flash-native-audio-latest",
+    "systemInstruction": {
+      "parts": [{ "text": "（ペルソナsystem instruction）" }]
+    },
     "generationConfig": {
       "speechConfig": {
         "voiceConfig": {
-          "prebuiltVoiceConfig": { "voice": "{voice}" }
+          "prebuiltVoiceConfig": { "voiceName": "{voice}" }
         }
-      },
-      "systemInstruction": {
-        "parts": [{ "text": "（ペルソナsystem instruction）" }]
       }
     },
     "inputAudioTranscription": {},
@@ -582,7 +585,7 @@ import { VRMAnimationLoaderPlugin } from 'https://esm.sh/@pixiv/three-vrm-animat
 }
 ```
 
-> **【スコープ外】** 本バージョンでは `get_current_time` のみ `tools` に定義する。それ以外の関数は定義しない。上記は参考。
+> **注意**: `gemini-2.5-flash-native-audio-latest` はすべてのメッセージを Blob（バイナリフレーム）で送信します。テキストフレームではなく Blob として受信するため、受信後に JSON にパースする必要があります。
 
 #### 5.3.2 音声入力送信（realtimeInput）
 
@@ -602,10 +605,12 @@ import { VRMAnimationLoaderPlugin } from 'https://esm.sh/@pixiv/three-vrm-animat
 | メッセージ種別 | 処理 |
 | ---------------- | ------ |
 | `setupComplete` | セッション確立完了。音声入力送信開始 |
-| `serverContent.audioChunk` | 音声データ受信 → AudioBuffer再生 + リップシンク |
+| `serverContent.modelTurn.parts[].inlineData.data` | 音声データ受信（24kHz PCM） → AudioBuffer再生 + リップシンク |
 | `serverContent.outputAudioTranscription.text` | テキスト受信 → 感情タグ抽出 + 字幕表示 |
 | `toolCall` | 関数呼び出し要求 → ローカルで関数実行 → `toolResponse`を送信 |
 | `interrupted` | ユーザー割り込み検知 → 音声再生停止 |
+
+> **注意**: `gemini-2.5-flash-native-audio-latest` では、音声データは `serverContent.audioChunk` ではなく `serverContent.modelTurn.parts[].inlineData.data` に含まれて送信されます。
 
 #### 5.3.4 関数応答（toolResponse）
 
@@ -690,7 +695,7 @@ speechSynthesis.speak(utterance);
 | `lip-sync.js` | **【スコープ外】** AnalyserNodeで振幅取得、lerpスムージング、VRM expressionManager更新 |
 | `gemini-live.js` | WebSocket接続・切断、setup/realtimeInput/toolResponse送信、サーバーメッセージ受信・振り分け |
 | `emotion.js` | テキストから感情タグ抽出、タグ除去、表情・アニメーション切替指令 |
-| `wake-word.js` | SpeechRecognition常時起動、**選択中アバターに応じたウェイクワード検出**、セッション開始/維持/切断のライフサイクル管理 |
+| `wake-word.js` | SpeechRecognition常時起動、**ウェイクワード検出**（アバター共通）、セッション開始/維持/切断のライフサイクル管理 |
 | `proactive.js` | **【スコープ外】** 能動的アクションのイベント監視、ユーザー存在検知、イベント条件判定、Live APIセッション接続してAIに能動的発話させる |
 | `functions.js` | `get_current_time`のみ実装（他5関数はスコープ外）、toolResponse生成 |
 | `subtitles.js` | 字幕エリアのDOM更新、表示/非表示切替 |
@@ -710,7 +715,7 @@ speechSynthesis.speak(utterance);
                │  ウェイクワード待機  │ ←──────────────┐
                │  (SpeechRecognition) │                │
                └────────┬─────────┘                │
-                        │ 「ねえ、リリ」検出            │
+                        │ 「もしもし」「こんにちは」検出     │
                         ▼                           │
                ┌──────────────────┐                │
                │  一時応答中        │                │
@@ -742,15 +747,15 @@ speechSynthesis.speak(utterance);
                        │                         │
                        ▼                         │
               ┌───────────────┐                 │
-              │ アイドル監視    │                 │
-              │ (8秒タイマー)   │                 │
+              │ アイドル監視     │                 │
+              │ (30秒タイマー)   │                 │
               └───────┬───────┘                 │
                       │                         │
                ┌──────┴──────┐                 │
                │             │                  │
                ▼             ▼                  │
-        新たな発話        アイドル8秒             │
-        (セッション延長)     (セッション切断) ────────┘
+        新たな発話         アイドル30秒             │
+        (セッション延長)      (セッション切断) ────────┘
 
                     ※ウェイクワード待機中、能動的アクション有効時:
                     ※【スコープ外】能動的アクションは本バージョンでは実装しない。以下の遷移は参考。
@@ -825,4 +830,4 @@ speechSynthesis.speak(utterance);
 - 複数アバターの同時表示
 - VRヘッドセット対応（WebXR）
 - ユーザー独自のウェイクワード設定
-- 音声の感情認識（ユーザーの感情からアバターの反応を変化）
+- 音声の感情認識（ユーザーの感情からアバターの反応を変化)

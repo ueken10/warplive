@@ -14,6 +14,7 @@ import {
   STORAGE_KEY_LANGUAGE,
   STORAGE_KEY_AVATAR,
   AVATARS,
+  WAKE_WORDS_BY_LANG,
   IDLE_TIMEOUT_SEC,
 } from "./config.js";
 import { VrmViewer } from "./vrm-viewer.js";
@@ -205,6 +206,7 @@ const els = {
   subtitleToggle: /** @type {HTMLInputElement} */ (document.getElementById("subtitle-toggle")),
   status: /** @type {HTMLElement} */ (document.getElementById("status")),
   apiKeyInput: /** @type {HTMLInputElement} */ (document.getElementById("api-key-input")),
+  apiKeyToggle: /** @type {HTMLButtonElement} */ (document.getElementById("api-key-toggle")),
   avatarSelect: /** @type {HTMLSelectElement} */ (document.getElementById("avatar-select")),
   languageSelect: /** @type {HTMLSelectElement} */ (document.getElementById("language-select")),
   micButton: /** @type {HTMLButtonElement} */ (document.getElementById("mic-button")),
@@ -359,25 +361,26 @@ function bindEvents() {
     }
   });
 
+  // APIキー表示切替
+  els.apiKeyToggle.addEventListener("click", () => {
+    const isHidden = els.apiKeyInput.type === "password";
+    els.apiKeyInput.type = isHidden ? "text" : "password";
+    els.apiKeyToggle.setAttribute("aria-label", isHidden ? "APIキーを隠す" : "APIキーを表示");
+    els.apiKeyToggle.setAttribute("title", isHidden ? "APIキーを隠す" : "APIキーを表示");
+    els.apiKeyToggle.classList.toggle("visible", isHidden);
+  });
+
   // アバター選択
   els.avatarSelect.addEventListener("change", () => {
     state.avatarKey = els.avatarSelect.value;
     saveStorage(STORAGE_KEY_AVATAR, state.avatarKey);
-    // アバター切替
+    // アバター切替（ウェイクワードはアバター共通のため変更なし）
     const avatar = AVATARS[state.avatarKey];
     if (avatar && vrmViewer) {
       vrmViewer.switchAvatar(avatar.file).catch((err) => {
         console.error("[WarpLive] アバター切替エラー:", err);
         setStatus("⚠ エラー — VRMファイルの読み込みに失敗しました");
       });
-    }
-    // ウェイクワードも更新
-    if (avatar && wakeWordManager) {
-      wakeWordManager.setWakeWords(avatar.wakeWords);
-      // ステータス表示も更新
-      if (!sessionActive) {
-        setStatus(`○ 待機中 — 「ねえ、${avatar.name.slice(-2)}」と話しかけてください`);
-      }
     }
   });
 
@@ -395,6 +398,12 @@ function bindEvents() {
   els.languageSelect.addEventListener("change", () => {
     state.language = els.languageSelect.value;
     saveStorage(STORAGE_KEY_LANGUAGE, state.language);
+    // 言語に応じたウェイクワードを更新
+    if (wakeWordManager) {
+      const words = WAKE_WORDS_BY_LANG[state.language] || WAKE_WORDS_BY_LANG[DEFAULT_LANGUAGE];
+      wakeWordManager.setWakeWords(words);
+      wakeWordManager.setLanguage(state.language);
+    }
     // Phase 9で i18n.setLanguage() 等を呼び出し
   });
 
@@ -458,8 +467,9 @@ function initGeminiLive() {
 function initWakeWord() {
   wakeWordManager = new WakeWordManager();
 
-  const avatar = AVATARS[state.avatarKey] || AVATARS[DEFAULT_AVATAR_KEY];
-  wakeWordManager.setWakeWords(avatar.wakeWords);
+  // 言語に応じたウェイクワードを設定（アバター共通）
+  const words = WAKE_WORDS_BY_LANG[state.language] || WAKE_WORDS_BY_LANG[DEFAULT_LANGUAGE];
+  wakeWordManager.setWakeWords(words);
   wakeWordManager.setLanguage(state.language);
 
   wakeWordManager.on({
@@ -735,8 +745,8 @@ function endLiveSession() {
   if (!sessionActive && !geminiLive?.connected) {
     // セッション未開始でもウェイクワード待機に戻る
     wakeWordManager?.reset();
-    const fallbackAvatar = AVATARS[state.avatarKey] || AVATARS[DEFAULT_AVATAR_KEY];
-    setStatus(`○ 待機中 — 「ねえ、${fallbackAvatar.name.slice(-2)}」と話しかけてください`);
+    const wakeWords = WAKE_WORDS_BY_LANG[state.language] || WAKE_WORDS_BY_LANG[DEFAULT_LANGUAGE];
+    setStatus(`○ 待機中 — ${wakeWords.map((w) => `「${w}」`).join(" or ")}と話しかけてください`);
     return;
   }
 
@@ -760,9 +770,9 @@ function endLiveSession() {
   // マイクボタンのアクティブ状態更新
   els.micButton.classList.remove("active");
 
-  // アバター名を反映したステータス表示
-  const avatar = AVATARS[state.avatarKey] || AVATARS[DEFAULT_AVATAR_KEY];
-  setStatus(`○ 待機中 — 「ねえ、${avatar.name.slice(-2)}」と話しかけてください`);
+  // ウェイクワード待機ステータス表示
+  const wakeWords = WAKE_WORDS_BY_LANG[state.language] || WAKE_WORDS_BY_LANG[DEFAULT_LANGUAGE];
+  setStatus(`○ 待機中 — ${wakeWords.map((w) => `「${w}」`).join(" or ")}と話しかけてください`);
 
   console.log("[WarpLive] セッション終了 — ウェイクワード待機に戻る");
 }
@@ -860,8 +870,8 @@ function init() {
   setInterval(updateClock, 1000);
 
   // 初期ステータス
-  const avatar = AVATARS[state.avatarKey] || AVATARS[DEFAULT_AVATAR_KEY];
-  setStatus(`○ 待機中 — 「ねえ、${avatar.name.slice(-2)}」と話しかけてください`);
+  const wakeWords = WAKE_WORDS_BY_LANG[state.language] || WAKE_WORDS_BY_LANG[DEFAULT_LANGUAGE];
+  setStatus(`○ 待機中 — ${wakeWords.map((w) => `「${w}」`).join(" or ")}と話しかけてください`);
 
   // 3Dアバター初期化（非同期）
   initVrmViewer().then(() => {
@@ -876,8 +886,8 @@ function init() {
   initWakeWord();
   if (wakeWordManager.available) {
     wakeWordManager.start().then(() => {
-      const avatar2 = AVATARS[state.avatarKey] || AVATARS[DEFAULT_AVATAR_KEY];
-      setStatus(`○ 待機中 — 「ねえ、${avatar2.name.slice(-2)}」と話しかけてください`);
+      const words = WAKE_WORDS_BY_LANG[state.language] || WAKE_WORDS_BY_LANG[DEFAULT_LANGUAGE];
+      setStatus(`○ 待機中 — ${words.map((w) => `「${w}」`).join(" or ")}と話しかけてください`);
     }).catch((err) => {
       console.error("[WarpLive] ウェイクワード開始エラー:", err);
       els.micButton.classList.remove("hidden");
