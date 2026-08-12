@@ -249,7 +249,7 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  width: min(320px, 85vw);
+  width: min(420px, 92vw);
   height: 100%;
   background: rgba(20, 20, 20, 0.97);
   backdrop-filter: blur(8px);
@@ -297,6 +297,18 @@ body {
   font-size: 15px;
   color: #eee;
   flex-shrink: 0;
+}
+
+/* ラベルとフィールドを2段組みにする項目（Gemini APIキーなど） */
+.menu-item.menu-item-column {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.menu-item.menu-item-column .api-key-field {
+  flex: none;
+  width: 100%;
 }
 
 .menu-item input[type="text"],
@@ -448,7 +460,7 @@ body {
 /* --- PC画面 --- */
 @media (min-width: 768px) {
   .menu-panel {
-    width: 320px;
+    width: 420px;
   }
 
   .subtitle {
