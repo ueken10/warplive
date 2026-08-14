@@ -20,6 +20,7 @@ import {
 import { VrmViewer } from "./vrm-viewer.js";
 import { GeminiLive } from "./gemini-live.js";
 import { WakeWordManager } from "./wake-word.js";
+import { LipSync } from "./lip-sync.js";
 
 /**
  * アプリケーション状態
@@ -51,6 +52,15 @@ let geminiLive = null;
 /** @type {WakeWordManager|null} */
 let wakeWordManager = null;
 
+/** @type {LipSync|null} リップシンク */
+let lipSync = null;
+
+/** @type {'listening'|'speaking'|'idle'|null} 現在の対話状態（spec.md 2.3.5準拠） */
+let conversationState = null;
+
+/** @type {string} 最後に受信した inputAudioTranscription（ツール呼び出し検証用） */
+let lastInputTranscription = "";
+
 /* =========================================================================
  * Phase 4: セッションライフサイクル
  * ========================================================================= */
@@ -72,9 +82,6 @@ let micProcessor = null;
 
 /** @type {GainNode|null} マイクゲイン（ミュート制御用） */
 let micGainNode = null;
-
-/** @type {SpeechSynthesisUtterance|null} 一時応答用 */
-let interimUtterance = null;
 
 /* =========================================================================
  * Phase 5: 音声再生
@@ -98,6 +105,7 @@ let playbackGainNode = null;
 
 /**
  * 音声再生用AudioContextを初期化（初回呼び出し時）
+ * 同時に AnalyserNode を playbackGainNode にタップ接続し、リップシンクで使用する
  * @returns {AudioContext}
  */
 function ensurePlaybackContext() {
@@ -108,6 +116,11 @@ function ensurePlaybackContext() {
     playbackGainNode.connect(playbackAudioContext.destination);
     playbackNextTime = 0;
     console.log("[WarpLive] 音声再生AudioContext初期化 (sampleRate:", playbackAudioContext.sampleRate, ")");
+
+    // リップシンクのAnalyserNodeをタップ接続（音声出力に影響しない）
+    if (lipSync) {
+      lipSync.attach(playbackAudioContext, playbackGainNode);
+    }
   }
   // resume（ブラウザの自動再生ポリシー対策）
   if (playbackAudioContext.state === "suspended") {
@@ -185,6 +198,36 @@ function stopPlayback() {
   playbackSources = [];
   playbackNextTime = 0;
   console.log("[WarpLive] 音声再生停止");
+}
+
+/* ----------------------------------------------------------------------
+ * Phase 5: 対話状態管理 & リップシンク制御
+ * spec.md 2.3.5「対話中のアニメーション制御」準拠
+ *  - listening: ユーザー発話中（静止・聞き手）
+ *  - speaking:  AI応答中（静止 + リップシンクのみ）
+ *  - idle:      対話アイドル（静止）
+ * ---------------------------------------------------------------------- */
+
+/**
+ * 対話状態を設定し、アバターのアニメーション制御とリップシンクを連動させる
+ * @param {'listening'|'speaking'|'idle'} state
+ */
+function setConversationState(state) {
+  if (conversationState === state) return;
+  conversationState = state;
+  console.log("[WarpLive] 対話状態:", state);
+
+  // アバターを静止（spring bone微動のみ）
+  vrmViewer?.setConversationState(state);
+
+  // リップシンク制御: AI応答中のみ aa を駆動、それ以外は aa=0
+  if (!lipSync) return;
+  if (state === "speaking") {
+    lipSync.start();
+  } else {
+    // listening / idle は口を閉じる（フェードアウト）
+    lipSync.stop();
+  }
 }
 
 /** @type {number|null} requestAnimationFrameのID */
@@ -431,10 +474,16 @@ function initGeminiLive() {
     onSetupComplete: () => {
       console.log("[WarpLive] Gemini Live API setup完了");
       setStatus("● 接続中 — 話しかけてください");
+      // 再生用AudioContextを事前初期化（最初の音声チャンク到着時の遅延を回避）
+      ensurePlaybackContext();
+      // セッション開始直後は対話アイドル（静止）
+      setConversationState("idle");
       resetIdleTimer();
     },
     onAudioChunk: (base64Pcm) => {
       playAudioChunk(base64Pcm);
+      // AI応答音声受信 → speaking 状態（静止 + リップシンク）
+      setConversationState("speaking");
       resetIdleTimer();
     },
     onTranscription: (text) => {
@@ -442,13 +491,52 @@ function initGeminiLive() {
       // Phase 6で字幕表示を実装
       resetIdleTimer();
     },
+    onInputTranscription: (text) => {
+      // AIがユーザーから聞き取った内容を字幕エリアに表示（検証用）
+      // 「今何時」と言っていないのに時刻が返ってくる問題のデバッグに有効
+      console.log("[WarpLive] ユーザー発話（AI認識）:", text);
+      els.subtitle.textContent = `🎤 ${text}`;
+      
+      // 最後の inputAudioTranscription を保存（ツール呼び出し検証用）
+      lastInputTranscription = text;
+      
+      resetIdleTimer();
+    },
     onToolCall: (callId, name, args) => {
       console.log("[WarpLive] toolCall:", name, args);
-      // Phase 7でファンクションコーリングを実装
+      // AIのツール応答待機中はアイドルタイマーをリセット
+      // （応答が来るまでセッションを切断しない）
+      resetIdleTimer();
+
+      // get_current_time: 現在時刻を返却
+      // spec.md 2.4.2準拠: ローカルで new Date() を実行し toolResponse で返却
+      if (name === "get_current_time") {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = String(now.getMinutes()).padStart(2, "0");
+        const response = { time: `${hours}:${minutes}` };
+        geminiLive?.sendToolResponse(callId, name, response);
+        console.log("[WarpLive] toolResponse送信:", response);
+      }
     },
     onInterrupted: () => {
       console.log("[WarpLive] interrupted");
       stopPlayback();
+      // ユーザー割込み → listening 状態（静止・聞き手）
+      setConversationState("listening");
+    },
+    onGoAway: (secondsLeft) => {
+      // サーバーがまもなく切断することを通知。残り時間分は通信可能。
+      // ユーザーに予兆を通知し、自然な終了へ誘導する。
+      console.log("[WarpLive] GoAway受信 — 残り", secondsLeft, "秒");
+      setStatus(`○ 接続がまもなく終了します（残り${secondsLeft}秒）— 続ける場合は再度話しかけてください`);
+    },
+    onDisconnected: (msg) => {
+      // セッション中（setup完了後）の予期せぬ切断。
+      // 従来はここが未処理で sessionActive=true が残り「無反応30秒」状態になっていた。
+      // 即座に endLiveSession を呼んでウェイクワード待機に戻す。
+      console.error("[WarpLive] セッション中切断:", msg);
+      endLiveSession();
     },
     onError: (msg) => {
       console.error("[WarpLive] GeminiLiveエラー:", msg);
@@ -496,34 +584,10 @@ async function handleWakeWordDetected(postWakeText) {
     return;
   }
 
-  // 一時応答を即座に発話
-  speakInterimResponse();
-
   setStatus("● 接続中 — Gemini Live APIに接続しています…");
 
   // セッション開始
   await startLiveSession();
-}
-
-/**
- * 一時応答をSpeechSynthesisで発話
- * ウェイクワード検出直後、Live API接続完了を待たずに即座に応答
- */
-function speakInterimResponse() {
-  const lang = state.language;
-  const text = lang.startsWith("en") ? "Yes?" : "はい";
-
-  interimUtterance = new SpeechSynthesisUtterance(text);
-  interimUtterance.lang = lang;
-  interimUtterance.rate = 1.1;
-  interimUtterance.volume = 1.0;
-
-  interimUtterance.onend = () => {
-    interimUtterance = null;
-  };
-
-  window.speechSynthesis.speak(interimUtterance);
-  console.log("[WarpLive] 一時応答発話:", text);
 }
 
 /* =========================================================================
@@ -549,8 +613,10 @@ async function startMicCapture() {
     const source = micAudioContext.createMediaStreamSource(micStream);
 
     // ScriptProcessorNodeでPCMキャプチャ
-    // bufferSize=4096, 1入力, 1出力
-    micProcessor = micAudioContext.createScriptProcessor(4096, 1, 1);
+    // bufferSize=2048 に削減し、音声チャンク送信間隔を短縮。
+    // 小さいほどサーバー側VADがユーザー発話終了を早く検出し、AI応答開始が早くなる。
+    // （4096は約256ms間隔、2048は約128ms間隔@16kHz相当）
+    micProcessor = micAudioContext.createScriptProcessor(2048, 1, 1);
 
     const inputSampleRate = micAudioContext.sampleRate;
     const targetSampleRate = 16000;
@@ -700,22 +766,24 @@ async function startLiveSession() {
   const avatar = AVATARS[state.avatarKey] || AVATARS[DEFAULT_AVATAR_KEY];
 
   try {
-    // マイクキャプチャ開始
-    await startMicCapture();
-
-    // Live API接続
-    const connectPromise = geminiLive.connect(state.apiKey, {
-      voice: avatar.voice,
-      avatarName: avatar.name,
-      language: state.language,
-    });
-
-    // 15秒のタイムアウト
+    // 並列化: マイクキャプチャとWebSocket接続を同時実行し、全体の遅延を短縮
+    // 従来は startMicCapture() の完了を待ってから connect() を開始していたため、
+    // getUserMedia + AudioContext生成（200〜500ms）とWebSocket接続（1〜3秒）が直列で積み重なっていた。
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error("接続タイムアウト（15秒）")), 15000);
     });
 
-    await Promise.race([connectPromise, timeoutPromise]);
+    await Promise.race([
+      Promise.all([
+        startMicCapture(),
+        geminiLive.connect(state.apiKey, {
+          voice: avatar.voice,
+          avatarName: avatar.name,
+          language: state.language,
+        }),
+      ]),
+      timeoutPromise,
+    ]);
 
     sessionActive = true;
     console.log("[WarpLive] Live APIセッション開始");
@@ -758,6 +826,10 @@ function endLiveSession() {
   // 音声再生停止
   stopPlayback();
 
+  // リップシンク停止・対話状態リセット
+  lipSync?.stop();
+  conversationState = null;
+
   // マイクキャプチャ停止
   stopMicCapture();
 
@@ -766,6 +838,9 @@ function endLiveSession() {
 
   // ウェイクワード検出を再開
   wakeWordManager?.reset();
+
+  // 待機モーション再開（ウェイクワード待機に戻る）
+  vrmViewer?.resumeIdleMotion();
 
   // マイクボタンのアクティブ状態更新
   els.micButton.classList.remove("active");
@@ -799,6 +874,9 @@ async function initVrmViewer() {
     return;
   }
   vrmViewer = new VrmViewer(canvas);
+
+  // リップシンク初期化（VRMロード後に使用可能）
+  lipSync = new LipSync(vrmViewer);
 
   // VRMAをプリロード
   try {

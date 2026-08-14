@@ -9,8 +9,28 @@
 export const GEMINI_LIVE_URL =
   "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
 
-/** @type {string} Gemini Live API モデル名 */
-export const GEMINI_MODEL = "models/gemini-2.5-flash-native-audio-latest";
+/** @type {string} Gemini Live API モデル名
+ *
+ * gemini-3.1-flash-live-preview を採用。
+ * 従来の gemini-2.5-flash-native-audio-latest より新しい世代で、
+ * デフォルトの thinkingLevel が 'minimal'（レイテンシ最小化最適化済み）。
+ * 応答レイテンシの改善が主目的。
+ */
+export const GEMINI_MODEL = "models/gemini-3.1-flash-live-preview";
+
+/** @type {number} VADの無音検出時間（ミリ秒）
+ *
+ * ユーザー発話終了後、この時間だけ無音が続くとAI応答を開始する。
+ * サーバー内部デフォルトは約800ms。500msに短縮して応答開始を高速化。
+ * 推奨範囲は500〜800ms。低すぎると発話途切れで応答が分割されるリスク。
+ */
+export const VAD_SILENCE_DURATION_MS = 500;
+
+/** @type {number} VADのプレフィックスパディング（ミリ秒）
+ *
+ * 発話検出前に含める音声の量。発話先頭の切り捨てを防ぐ。
+ */
+export const VAD_PREFIX_PADDING_MS = 20;
 
 /** @type {number} アイドルタイムアウト（秒）。この秒数ユーザー発話がない場合セッション切断 */
 export const IDLE_TIMEOUT_SEC = 30;
@@ -111,7 +131,7 @@ export const ASSETS_BASE = "./assets";
 export const VRMA_BASE = `${ASSETS_BASE}/vrma`;
 
 /**
- * VRMAアニメーションファイルパス（15種）
+ * VRMAアニメーションファイルパス（24種）
  * @typedef {Object} VrmaPaths
  */
 export const VRMA_PATHS = {
@@ -130,6 +150,17 @@ export const VRMA_PATHS = {
   "006_drinkwater": `${VRMA_BASE}/006_drinkwater.vrma`,
   "007_gekirei": `${VRMA_BASE}/007_gekirei.vrma`,
   "008_gatan": `${VRMA_BASE}/008_gatan.vrma`,
+  Angry: `${VRMA_BASE}/Angry.vrma`,
+  Blush: `${VRMA_BASE}/Blush.vrma`,
+  Clapping: `${VRMA_BASE}/Clapping.vrma`,
+  Goodbye: `${VRMA_BASE}/Goodbye.vrma`,
+  Jump: `${VRMA_BASE}/Jump.vrma`,
+  LookAround: `${VRMA_BASE}/LookAround.vrma`,
+  Relax: `${VRMA_BASE}/Relax.vrma`,
+  Sad: `${VRMA_BASE}/Sad.vrma`,
+  Sleepy: `${VRMA_BASE}/Sleepy.vrma`,
+  Surprised: `${VRMA_BASE}/Surprised.vrma`,
+  Thinking: `${VRMA_BASE}/Thinking.vrma`,
 };
 
 /**
@@ -152,15 +183,43 @@ export const EMOTION_TO_VRMA = {
  * @type {string[]}
  */
 export const IDLE_MOTION_POOL = [
-  "VRMA_01",
-  "VRMA_05",
-  "VRMA_07",
-  "001_motion_pose",
-  "003_humidai",
+  "VRMA_06",
+  "Blush",
+  "Sleepy",
+  "Thinking",
 ];
 
 /** @type {number} VRMAクロスフェード時間（秒） */
 export const VRMA_CROSSFADE_SEC = 0.3;
+
+/**
+ * 対話中の静止ベースポーズとして使用するVRMAキー
+ * spec.md 2.3.5「対話中のアニメーション制御」準拠
+ * Tポーズ回避のため、自然な立位ポーズ（VRMA_01: Show full body）をフリーズ再生する
+ * @type {string}
+ */
+export const CONVERSATION_BASE_POSE = "VRMA_01";
+
+/* =========================================================================
+ * Phase 5: リップシンク関連（spec.md 2.2.3節準拠）
+ * ========================================================================= */
+
+/** @type {number} AnalyserNodeのfftSize（振幅取得のみなら小さくて十分） */
+export const LIP_SYNC_FFT_SIZE = 1024;
+
+/** @type {number} lerpスムージング係数（0.3〜0.5） */
+export const LIP_SYNC_SMOOTHING = 0.4;
+
+/** @type {number} 振幅増幅係数（AI音声は振幅が小さい傾向があるため） */
+export const LIP_SYNC_AMPLITUDE_GAIN = 1.5;
+
+/**
+ * 対話中のアバター状態（spec.md 2.3.5「対話中のアニメーション制御」準拠）
+ * - listening: ユーザー発話中（静止・聞き手）
+ * - speaking:  AI応答中（静止 + リップシンクのみ）
+ * - idle:      対話アイドル（静止）
+ * @typedef {'listening'|'speaking'|'idle'} ConversationState
+ */
 
 /** @type {number} カメラの初期距離（全身が映る構図） */
 export const CAMERA_DISTANCE = 3.0;

@@ -16,6 +16,8 @@ import {
   GEMINI_MODEL,
   SYSTEM_INSTRUCTION_TEMPLATE,
   FUNCTION_DECLARATIONS,
+  VAD_SILENCE_DURATION_MS,
+  VAD_PREFIX_PADDING_MS,
 } from "./config.js";
 
 /**
@@ -201,6 +203,12 @@ export class GeminiLive {
               },
             },
           },
+          // 思考（thinking）を最小化し、応答レイテンシを最小化
+          // gemini-3.1-flash-live-preview は thinkingLevel で思考の深さを制御。
+          // デフォルトは 'minimal'（レイテンシ最小化に最適化済み）だが明示的に指定。
+          thinkingConfig: {
+            thinkingLevel: "minimal",
+          },
         },
         systemInstruction: {
           parts: [{ text: systemInstructionText }],
@@ -212,11 +220,24 @@ export class GeminiLive {
             functionDeclarations: FUNCTION_DECLARATIONS,
           },
         ],
+        // VAD設定: ユーザー発話終了検出を高速化し、AI応答開始レイテンシを短縮
+        // silenceDurationMs: 発話終了後にAI応答を開始するまでの無音待機時間
+        //   サーバーデフォルト約800ms → 500msに短縮（推奨範囲500〜800ms）
+        // prefixPaddingMs: 発話検出前に含める音声量（先頭切り捨て防止）
+        realtimeInputConfig: {
+          automaticActivityDetection: {
+            disabled: false,
+            startOfSpeechSensitivity: "START_SENSITIVITY_LOW",
+            endOfSpeechSensitivity: "END_SENSITIVITY_LOW",
+            prefixPaddingMs: VAD_PREFIX_PADDING_MS,
+            silenceDurationMs: VAD_SILENCE_DURATION_MS,
+          },
+        },
       },
     };
 
     this._send(setupMessage);
-    console.log("[GeminiLive] setup送信完了 (voice:", voice, ", avatar:", avatarName, ")");
+    console.log("[GeminiLive] setup送信完了 (model:", GEMINI_MODEL, ", voice:", voice, ", avatar:", avatarName, ", VAD silence:", VAD_SILENCE_DURATION_MS, "ms)");
   }
 
   /* =======================================================================

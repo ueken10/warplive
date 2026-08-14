@@ -23,23 +23,34 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
 | VRMアバター | `assets/asaka_lily.vrm` | デフォルトアバター（リリ） |
 | VRMアバター | `assets/miura_luca.vrm` | 切替用アバター |
 | VRMアバター | `assets/matsuda_emma.vrm` | 切替用アバター |
-| VRMAアニメーション | `assets/vrma/VRMA_01.vrma` | Show full body（待機・neutral） |
+| VRMAアニメーション | `assets/vrma/VRMA_01.vrma` | Show full body（neutral） |
 | VRMAアニメーション | `assets/vrma/VRMA_02.vrma` | Greeting（sad） |
 | VRMAアニメーション | `assets/vrma/VRMA_03.vrma` | Peace sign（happy） |
 | VRMAアニメーション | `assets/vrma/VRMA_04.vrma` | Shoot（angry） |
 | VRMAアニメーション | `assets/vrma/VRMA_05.vrma` | Spin（surprised） |
-| VRMAアニメーション | `assets/vrma/VRMA_06.vrma` | Model pose（待機・relaxed） |
+| VRMAアニメーション | `assets/vrma/VRMA_06.vrma` | Model pose（relaxed） |
 | VRMAアニメーション | `assets/vrma/VRMA_07.vrma` | Squat（excited） |
-| VRMAアニメーション | `assets/vrma/001_motion_pose.vrma` | ポーズをとりながらムーブ（待機） |
+| VRMAアニメーション | `assets/vrma/001_motion_pose.vrma` | ポーズをとりながらムーブ |
 | VRMAアニメーション | `assets/vrma/002_dogeza.vrma` | 土下座 |
-| VRMAアニメーション | `assets/vrma/003_humidai.vrma` | 踏み台昇降（待機） |
+| VRMAアニメーション | `assets/vrma/003_humidai.vrma` | 踏み台昇降 |
 | VRMAアニメーション | `assets/vrma/004_hello_1.vrma` | 待ち合わせ・挨拶 |
-| VRMAアニメーション | `assets/vrma/005_smartphone.vrma` | スマホを弄る（待機） |
+| VRMAアニメーション | `assets/vrma/005_smartphone.vrma` | スマホを弄る |
 | VRMAアニメーション | `assets/vrma/006_drinkwater.vrma` | ペットボトルの水を飲む |
 | VRMAアニメーション | `assets/vrma/007_gekirei.vrma` | やる気が出ない人を励ます |
 | VRMAアニメーション | `assets/vrma/008_gatan.vrma` | ガタッ！お前じゃねえ、スンッ…… |
+| VRMAアニメーション | `assets/vrma/Angry.vrma` | 怒り |
+| VRMAアニメーション | `assets/vrma/Blush.vrma` | 照れ |
+| VRMAアニメーション | `assets/vrma/Clapping.vrma` | 拍手 |
+| VRMAアニメーション | `assets/vrma/Goodbye.vrma` | さようなら（別れの挨拶） |
+| VRMAアニメーション | `assets/vrma/Jump.vrma` | ジャンプ |
+| VRMAアニメーション | `assets/vrma/LookAround.vrma` | 周囲を見回す |
+| VRMAアニメーション | `assets/vrma/Relax.vrma` | リラックス |
+| VRMAアニメーション | `assets/vrma/Sad.vrma` | 悲しみ |
+| VRMAアニメーション | `assets/vrma/Sleepy.vrma` | 眠い |
+| VRMAアニメーション | `assets/vrma/Surprised.vrma` | 驚き |
+| VRMAアニメーション | `assets/vrma/Thinking.vrma` | 考え中 |
 
-※VRMA_01〜07はピクシブ株式会社VRoidプロジェクト（著作権表記必須）、001〜008はへすい/rerofumi氏制作のCC0（パブリックドメイン）モーションパック。
+※VRMA_01〜07はピクシブ株式会社VRoidプロジェクト（著作権表記必須）、001〜008はへすい/rerofumi氏制作のCC0（パブリックドメイン）モーションパック。Angry/Blush/Clapping/Goodbye/Jump/LookAround/Relax/Sad/Sleepy/Surprised/Thinkingは感情表現系モーションパック（出典・ライセンス要確認）。
 
 ### 1.3 スコープ外（本バージョンでは実装しない）
 
@@ -48,7 +59,6 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
 | スコープ外項目 | 該当セクション | 理由・備考 |
 | -------------- | -------------- | ---------- |
 | **VRMインポート** | 2.1, 4.2 | ユーザーによるローカル`.vrm`ファイルのインポート機能は実装しない。プリセット3体（リリ・エマ・ルカ）のみ提供 |
-| **リップシンク** | 2.2.3, 5.2, 6 | Live API音声出力に対するVRM口形状（`aa`）マッピングは実装しない。音声再生のみ行う |
 | **`get_current_time` 以外のファンクションコーリング** | 2.4, 5.3.1, 6 | `get_weather`, `start_timer`, `set_alarm`, `start_pomodoro`, `play_janken` は実装しない。`get_current_time` のみ実装 |
 | **日本語・英語以外の多言語対応** | 2.6, 4.2, 6 | 中国語・台湾華語・韓国語・マレー語・フィリピン語は対応しない。日本語（デフォルト）・英語のみ対応 |
 | **無料枠警告** | 2.8, 4.2, 8 | セッション回数カウント・警告バナー表示は実装しない |
@@ -69,7 +79,7 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
 | アバター切替 | ハンバーガーメニューから3体のプリセットVRMを選択可能。切替時にウェイクワード・ペルソナ・音声も連動して変更（詳細は2.2.2、3章参照） |
 | ~~VRMインポート~~ | **【スコープ外】** ユーザーによるローカル`.vrm`ファイルのインポートは本バージョンでは実装しない。プリセット3体のみ提供 |
 | デフォルトアバター | `asaka_lily.vrm`（浅香リリ） |
-| 待機アニメーション | ウェイクワード待機中・対話アイドル中は、待機用VRMA（VRMA_01, VRMA_05, VRMA_07, 001_motion_pose, 003_humidai）からランダムに選択して1ループ再生。終了後に別のモーションへ自動切替（詳細は2.3.5参照） |
+| 待機アニメーション | ウェイクワード待機中は、待機用VRMA（VRMA_06, Blush, Sleepy, Thinking）からランダムに選択して1ループ再生。終了後に別のモーションへ自動切替（詳細は2.3.5参照） |
 
 ### 2.2 音声対話（Gemini Live API）
 
@@ -77,14 +87,14 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
 
 | 項目 | 仕様 |
 | ------ | ------ |
-| API | Gemini Live API（`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`） |
+| API | Gemini Live API（`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent`） |
 | 認証 | URLパラメータ `?key=API_KEY`。APIキーはユーザーがUIで入力（ローカルストレージに保存） |
-| モデル | `models/gemini-2.5-flash-native-audio-latest`（このAPIキーで`bidiGenerateContent`に対応しているモデルは現状これのみ） |
+| モデル | `models/gemini-3.1-flash-live-preview`（従来の `gemini-2.5-flash-native-audio-latest` より新しい世代。デフォルトの `thinkingLevel` が `minimal`（レイテンシ最小化最適化済み）で応答遅延の改善が主目的。APIキーで利用可能か実行時に確認が必要） |
 | 音声入力 | 16kHz, 16-bit PCM, mono（ブラウザマイク → ScriptProcessorNode でPCM化） |
 | 音声出力 | Live APIから受信した24kHz PCMチャンクをAudioBufferに変換して再生 |
 | APIキー警告 | ハンバーガーメニューのAPIキー設定項目の上に「APIキーはローカルでのみ使用し、公開しないでください」の警告を表示 |
 
-> **注意**: `gemini-3.1-flash-live-preview` 等、他のLive API対応モデルはこのAPIキーでは利用できない場合があります。利用可能なモデルはAPIキーごとに異なり、実行時にREST APIで確認してください。
+> **注意**: `gemini-3.1-flash-live-preview` はすべてのメッセージを Blob（バイナリフレーム）で送信します。テキストフレームではなく Blob として受信するため、受信後に JSON にパースする必要があります。
 
 #### 2.2.2 ウェイクワード（方式B: ローカル検出 + オンデマンド接続）
 
@@ -94,7 +104,7 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
 | ウェイクワード | 選択中のアバターに応じて切り替え（下表参照） |
 | 検出後の動作 | ① Live APIセッションを開始 ② ウェイクワード以降の発話をバッファリングしてLive APIに送信 |
 | 結果の蓄積リセット | `continuous: true` で `event.results` に全結果が蓄積されると、`isFinal` の結果が出た後も古い結果が残り、新しい発話が古いテキストに埋もれてしまう。ウェイクワードが検出されなかった `isFinal` 時（発話確定）に認識を一度停止し、自動再開させることで結果の蓄積をリセットする |
-| 一時応答 | ウェイクワード検出直後、Live API接続完了を待たずに `SpeechSynthesis` で短い一時応答（「はい」等）を即座に発話。アバターは `[greeted]` 表情 + VRMA_02 (Greeting) を再生。Live API接続完了後にユーザー発話の送信を開始。一時応答の発話中にLive API音声が再生されないようミュート制御 |
+| 一時応答 | **【廃止】** ウェイクワード検出後はLive API接続完了を待ち、AI応答を再生する。`SpeechSynthesis` による一時応答・ミュート制御は行わない |
 | 連続対話 | ウェイクワード検出後、**アイドル30秒間**はLive APIセッションを維持。新たな発話があれば延長 |
 | セッション切断 | アイドル30秒経過でLive APIセッションを切断し、ウェイクワード待ちに戻る |
 | 無料枠配慮 | 常時接続せず、ウェイクワード検出時のみ接続するためAPI消費を最小化 |
@@ -117,8 +127,6 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
          │
          ├─ ウェイクワード検出（例: 「もしもし」「こんにちは」）
          │     │
-         │     ├─ 一時応答（SpeechSynthesis で「はい」を即座に発話 + Greetingアニメーション）
-         │     │
          │     ├─ Live API WebSocket接続開始
          │     ├─ ウェイクワード以降の発話をLive APIに送信
          │     ├─ Live APIからの音声応答を再生 + リップシンク
@@ -130,17 +138,21 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
          └─ ウェイクワード未検出 → 何もしない（API消費ゼロ）
 ```
 
-#### 2.2.3 リップシンク 【スコープ外】
+#### 2.2.3 リップシンク
 
-> **本バージョンでは実装しない。** Live API音声出力の再生のみ行い、VRM口形状（`aa`）へのマッピングは行わない。
+Live API音声出力を振幅解析し、VRM口形状（`aa`）にマッピングする。AI応答中のみ動作し、ユーザー発話中・アイドル中は `aa=0` を維持する。
 
 | 項目 | 仕様 |
 | ------ | ------ |
 | 方式 | Live API音声出力を `AnalyserNode` で振幅解析 → VRM表情 `aa`（口を開ける）にマッピング |
-| 音声フォーマット | Live API出力: 16kHz PCM → AudioContext サンプルレートにリサンプリング |
+| 解析方法 | `AnalyserNode.getByteTimeDomainData()` で波形データから振幅取得。FFT（`getByteFrequencyData`）は使用しない |
+| fftSize | 1024 |
+| 解析頻度 | `requestAnimationFrame` 毎（目標60fps、モバイルは30fps許容） |
+| 音声フォーマット | Live API出力: 24kHz PCM → `AudioBufferSourceNode` 再生時にブラウザが自動リサンプリング。手動リサンプリングは実装しない |
 | マッピング | 振幅の絶対値 → `vrm.expressionManager.setValue('aa', value)` |
 | スムージング | lerp（線形補間）でカクカクを防止。係数 0.3〜0.5 |
 | クローズドマウス | 発話終了時は `aa` を 0 に徐々に戻す |
+| 対象状態 | AI応答中（Live API音声再生中）のみ。ユーザー発話中・対話アイドル中・ウェイクワード待機中は `aa=0` |
 
 ### 2.3 感情表現（タグ前置方式）
 
@@ -190,14 +202,28 @@ AIに対するsystem instructionに以下を含める：
 | 項目 | 仕様 |
 | ------ | ------ |
 | 目的 | 単一の待機ポーズによる単調さを解消し、アバターが「その場で生活している」生活感を演出 |
-| 対象状態 | ウェイクワード待機中、対話中のアイドル（ユーザー発話待ち・AI応答待ち） |
-| 待機モーションプール | VRMA_01, VRMA_05, VRMA_07, 001_motion_pose, 003_humidai（計5種類） |
+| 対象状態 | ウェイクワード待機中のみ。対話中（ユーザー発話中・AI応答中・対話アイドル）は対象外 |
+| 待機モーションプール | VRMA_06, Blush, Sleepy, Thinking |
 | 選択方式 | 各モーション終了時にプールからランダムに次のモーションを選択。直前と同じモーションは回避（連続重複防止） |
 | 再生回数 | 各モーション1ループ再生。ループ終了後に次のモーションへ切替 |
 | 切替タイミング | モーション終了時。クロスフェード（0.3秒）で滑らかに遷移 |
 | 優先制御 | 感情タグによるアニメーション（2.3.3）が優先。感情アニメーション終了後に待機モーションに復帰 |
-| 対話中の制御 | Live API音声再生中（リップシンク中）は待機モーションを継続。音声終了後に次の待機モーションへ切替可 |
+| 対話中の制御 | 対話セッション中はアニメーションを停止し静止（spring boneの微動のみ）。詳細は下表「対話中のアニメーション制御」参照 |
 | 設定 | 待機モーションプール・切替間隔は`config.js`で設定可能 |
+
+**対話中のアニメーション制御:**
+
+リップシンク（2.2.3）で口が動くため、対話中は体を静止させ、会話に集中する自然な姿勢を維持する。
+
+停止対象は**待機モーションプールからのランダム再生**である。実装（`vrm-viewer.js` `setConversationState()`）では `mixer.stopAllAction()` で全AnimationActionを停止した後、`CONVERSATION_BASE_POSE`（`VRMA_01` Show full body）を再生して即座に `paused = true` でフリーズさせ、自然な立位ポーズを保持する（Tポーズ回避）。spring boneは引き続き微動し「生きている感」を維持する。
+
+| 状態 | アニメーション |
+| ------ | ------ |
+| ユーザー発話中 | 待機モーションを停止し、VRMA_01をフリーズ再生して静止。spring boneの微動のみ。聞き手に徹する |
+| AI応答中 | 待機モーションを停止し、VRMA_01をフリーズ再生して静止 + リップシンクのみ。体は止まり、口（`aa`）のみ音声振幅に連動して動く |
+| 対話アイドル | 待機モーションを停止し、VRMA_01をフリーズ再生して静止。spring boneの微動のみ |
+
+※感情タグ検出時（2.3.3）は上記静止制御より優先し、対応するVRMAアニメーションを1ループ再生。終了後に静止に復帰。
 
 ### 2.4 ファンクションコーリング
 
@@ -500,7 +526,6 @@ Live APIの `setup` メッセージの `tools` で以下の関数を定義する
 | 状態 | 表示 |
 | ------ | ------ |
 | ウェイクワード待機中 | `○ 待機中 — 「もしもし」と話しかけてください` |
-| 一時応答中 | `● 応答中 — はい` |
 | Live API接続中 | `● 接続中 — 話しかけてください` |
 | AI応答中 | `● 応答中 — {name}が話しています` |
 | ~~能動的アクション中~~ | ~~`● 話しかけ中 — {name}から話しかけています`~~ **【スコープ外】** |
@@ -524,8 +549,6 @@ import { VRMAnimationLoaderPlugin } from 'https://esm.sh/@pixiv/three-vrm-animat
 ※バージョンは実装時に最新安定版を確認して指定。
 
 ### 5.2 音声処理パイプライン
-
-> **【スコープ外】** リップシンク（AnalyserNode → VRM blendShape `aa`）は本バージョンでは実装しない。音声再生のみ行う。以下のパイプラインは参考として残す。
 
 ```
 [マイク入力]
@@ -555,19 +578,21 @@ import { VRMAnimationLoaderPlugin } from 'https://esm.sh/@pixiv/three-vrm-animat
 
 #### 5.3.1 セッション開始（setup）
 
-```json
+```
+json
 {
   "setup": {
-    "model": "models/gemini-2.5-flash-native-audio-latest",
-    "systemInstruction": {
-      "parts": [{ "text": "（ペルソナsystem instruction）" }]
-    },
+    "model": "models/gemini-3.1-flash-live-preview",
     "generationConfig": {
       "speechConfig": {
         "voiceConfig": {
           "prebuiltVoiceConfig": { "voiceName": "{voice}" }
         }
-      }
+      },
+      "thinkingConfig": { "thinkingLevel": "minimal" }
+    },
+    "systemInstruction": {
+      "parts": [{ "text": "（ペルソナsystem instruction）" }]
     },
     "inputAudioTranscription": {},
     "outputAudioTranscription": {},
@@ -580,12 +605,27 @@ import { VRMAnimationLoaderPlugin } from 'https://esm.sh/@pixiv/three-vrm-animat
         { "name": "start_pomodoro", "description": "...", "parameters": { "cycles": "number" } },
         { "name": "play_janken", "description": "...", "parameters": {} }
       ]}
-    ]
+    ],
+    "realtimeInputConfig": {
+      "automaticActivityDetection": {
+        "disabled": false,
+        "startOfSpeechSensitivity": "START_SENSITIVITY_LOW",
+        "endOfSpeechSensitivity": "END_SENSITIVITY_LOW",
+        "prefixPaddingMs": 20,
+        "silenceDurationMs": 500
+      }
+    },
+    "contextWindowCompression": {
+      "slidingWindow": { "targetTokens": 4000 },
+      "triggerTokens": 8000
+    }
   }
 }
 ```
 
-> **注意**: `gemini-2.5-flash-native-audio-latest` はすべてのメッセージを Blob（バイナリフレーム）で送信します。テキストフレームではなく Blob として受信するため、受信後に JSON にパースする必要があります。
+> **VAD設定**: `silenceDurationMs: 500` でサーバーデフォルト約800msを短縮し、発話終了後のAI応答開始を高速化。
+> **thinkingConfig**: `thinkingLevel: minimal` で思考レイテンシを最小化。
+> **contextWindowCompression**: 古いコンテキストを自動破棄し、長時間対話でのコンテキスト枯渇を防止。
 
 #### 5.3.2 音声入力送信（realtimeInput）
 
@@ -606,9 +646,10 @@ import { VRMAnimationLoaderPlugin } from 'https://esm.sh/@pixiv/three-vrm-animat
 | ---------------- | ------ |
 | `setupComplete` | セッション確立完了。音声入力送信開始 |
 | `serverContent.modelTurn.parts[].inlineData.data` | 音声データ受信（24kHz PCM） → AudioBuffer再生 + リップシンク |
-| `serverContent.outputAudioTranscription.text` | テキスト受信 → 感情タグ抽出 + 字幕表示 |
+| `serverContent.outputTranscription.text` | テキスト受信 → 感情タグ抽出 + 字幕表示 |
 | `toolCall` | 関数呼び出し要求 → ローカルで関数実行 → `toolResponse`を送信 |
 | `interrupted` | ユーザー割り込み検知 → 音声再生停止 |
+| `goAway` | 接続終了予兆 → ユーザーに通知・終了準備 |
 
 > **注意**: `gemini-2.5-flash-native-audio-latest` では、音声データは `serverContent.audioChunk` ではなく `serverContent.modelTurn.parts[].inlineData.data` に含まれて送信されます。
 
@@ -626,7 +667,7 @@ import { VRMAnimationLoaderPlugin } from 'https://esm.sh/@pixiv/three-vrm-animat
 
 ### 5.4 SpeechSynthesis フォールバック
 
-> **【スコープ外】** タイマー・アラーム・ポモドーロは本バージョンでは実装しないため、本フォールバック発話も使用しない。一時応答（2.2.2）の `SpeechSynthesis` のみ使用する。以下は参考として残す。
+> **【スコープ外】** タイマー・アラーム・ポモドーロは本バージョンでは実装しないため、本フォールバック発話も使用しない。以下は参考として残す。
 
 タイマー・アラーム完了時にLive APIセッションが切断済みの場合：
 
@@ -655,7 +696,7 @@ speechSynthesis.speak(utterance);
 │   ├── config.js               # 定数・設定値（APIモデル名、音声マッピング、無料枠閾値等）
 │   ├── main.js                 # アプリ全体の初期化・状態管理・イベント統括
 │   ├── vrm-viewer.js           # Three.jsシーン・VRMロード・VRMA再生・カメラ制御
-│   ├── lip-sync.js             # 【スコープ外】音声振幅 → blendShape 'aa' マッピング（本バージョンでは未実装）
+│   ├── lip-sync.js             # 音声振幅 → blendShape 'aa' マッピング（AI応答中のみ動作）
 │   ├── gemini-live.js          # WebSocket接続・Live APIプロトコル・音声送受信
 │   ├── emotion.js              # 感情タグパース → 表情/アニメーション切替
 │   ├── wake-word.js            # ウェイクワード検出（Web Speech API）・セッション管理
@@ -692,7 +733,7 @@ speechSynthesis.speak(utterance);
 | `config.js` | モデル名、音声マッピング、感情→アニメーション対応表、無料枠閾値、アイドルタイムアウト値、**待機モーションプール**、**アバター別設定（名前・ウェイクワード・ペルソナ・音声）**等の定数 |
 | `main.js` | アプリ起動、各モジュールの初期化、状態遷移管理、UIイベントバインディング、**アバター切替時のウェイクワード・ペルソナ・音声の連動変更** |
 | `vrm-viewer.js` | Three.jsシーン構築、VRMロード・切替、VRMAアニメーション再生・クロスフェード、カメラリサイズ、**待機モーションのランダム選択・連続再生管理** |
-| `lip-sync.js` | **【スコープ外】** AnalyserNodeで振幅取得、lerpスムージング、VRM expressionManager更新 |
+| `lip-sync.js` | AnalyserNodeで振幅取得、lerpスムージング、VRM expressionManager更新。AI応答中のみ `aa` を駆動し、それ以外の状態は `aa=0` を維持 |
 | `gemini-live.js` | WebSocket接続・切断、setup/realtimeInput/toolResponse送信、サーバーメッセージ受信・振り分け |
 | `emotion.js` | テキストから感情タグ抽出、タグ除去、表情・アニメーション切替指令 |
 | `wake-word.js` | SpeechRecognition常時起動、**ウェイクワード検出**（アバター共通）、セッション開始/維持/切断のライフサイクル管理 |
@@ -716,13 +757,6 @@ speechSynthesis.speak(utterance);
                │  (SpeechRecognition) │                │
                └────────┬─────────┘                │
                         │ 「もしもし」「こんにちは」検出     │
-                        ▼                           │
-               ┌──────────────────┐                │
-               │  一時応答中        │                │
-               │ (SpeechSynthesis   │                │
-               │  + Greeting)       │                │
-               └────────┬─────────┘                │
-                        │                           │
                         ▼                           │
                ┌──────────────────┐                │
                │  Live API接続中    │                │

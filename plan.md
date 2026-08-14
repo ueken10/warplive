@@ -6,11 +6,12 @@ spec.mdに基づく3Dアバターアシスタント「WarpLive」の実装計画
 
 > **スコープ外機能（本計画では実装しない）**: spec.md 1.3節参照
 > - VRMインポート
-> - リップシンク
 > - `get_current_time` 以外のファンクションコーリング（`get_weather`, `start_timer`, `set_alarm`, `start_pomodoro`, `play_janken`）
 > - 日本語・英語以外の多言語対応
 > - 無料枠警告
 > - 能動的アクション
+>
+> **スコープ内（実装する）**: リップシンク（AnalyserNode → VRM `aa`、AI応答中のみ）
 
 ---
 
@@ -66,7 +67,11 @@ index.html, css/style.css, js/config.js, js/main.js
   - `resize` イベントでカメラ・レンダラーリサイズ
   - `requestAnimationFrame` でレンダリングループ
   - VRMAクロスフェード機能（0.3秒）
-  - 待機モーションのランダム選択・連続再生管理（モーション終了時にプールからランダム選択、直前重複回避）
+  - 待機モーションのランダム選択・連続再生管理（モーション終了時にプールからランダム選択、直前重複回避）。**対象状態はウェイクワード待機中のみ**
+  - **対話中のアニメーション制御メソッド**（spec.md 2.3.5「対話中のアニメーション制御」準拠）:
+    - `setConversationState(state)`: `listening`（ユーザー発話中）/ `speaking`（AI応答中）/ `idle`（対話アイドル）の3状態を受け取り、いずれもアニメーション停止（静止・spring bone微動のみ）にする
+    - `speaking` 状態ではリップシンク（Phase 5）に口の動きを委譲。体は静止
+    - 感情タグ検出時（Phase 6）は静止制御より優先してVRMAアニメーションを1ループ再生、終了後に静止に復帰
   - アバター切替メソッド（`switchAvatar(filename)`）
   - ※VRMインポートメソッド（`loadVRMFromFile(file)`）は **【スコープ外】** 実装しない
 - [ ] `js/main.js` から `vrm-viewer.js` を初期化
@@ -141,24 +146,41 @@ js/wake-word.js, js/main.js（更新）, js/config.js（更新）
 
 ---
 
-## Phase 5: 音声再生
+## Phase 5: 音声再生 & リップシンク
 
-**目標:** Live APIからの音声チャンクを再生する。
-
-> **【スコープ外】** リップシンク（`js/lip-sync.js`、AnalyserNode → VRM blendShape `aa`）は本バージョンでは実装しない。音声再生のみ行う。
+**目標:** Live APIからの音声チャンクを再生し、AI応答中にVRM口形状（`aa`）を音声振幅に連動させる。
 
 ### タスク
 
 - [x] `js/gemini-live.js` の `onAudioChunk` 処理を `js/main.js` に実装
-  - PCMチャンク → AudioBuffer変換（16kHz → AudioContext サンプルレートにリサンプリング）
+  - PCMチャンク → AudioBuffer変換（**24kHz** PCM → `AudioBufferSourceNode` 再生時にブラウザが自動リサンプリング。手動リサンプリングは実装しない）
   - 順次再生キュー管理
   - `interrupted` 検出時: 再生キューをクリアし即座に停止
-- [x] 動作確認: ウェイクワード後に話しかけると、AI音声が再生される
+- [ ] `js/lip-sync.js` 作成（spec.md 2.2.3準拠）
+  - `LipSync` クラス実装
+  - `AudioContext` に `AnalyserNode` 接続（`fftSize: 1024`）
+  - `AnalyserNode.getByteTimeDomainData()` で波形データから振幅取得。**FFT（`getByteFrequencyData`）は使用しない**
+  - 解析頻度: `requestAnimationFrame` 毎（目標60fps、モバイル30fps許容）
+  - 振幅の絶対値 → `vrm.expressionManager.setValue('aa', value)`
+  - lerpスムージング（係数 0.3〜0.5）でカクカク防止
+  - 発話終了時は `aa` を 0 に徐々に戻す（クローズドマウス）
+  - **対象状態: AI応答中（Live API音声再生中）のみ**。ユーザー発話中・対話アイドル中・ウェイクワード待機中は `aa=0` を維持
+  - `start(audioBufferSourceNode)` / `stop()` メソッドでAI応答開始・終了に連動
+- [ ] `js/main.js` にリップシンク統合
+  - AI応答音声再生開始時: `vrmViewer.setConversationState('speaking')` + `lipSync.start()`
+  - AI応答音声再生終了時: `lipSync.stop()` + `vrmViewer.setConversationState('idle')`
+  - ユーザー発話検出時: `vrmViewer.setConversationState('listening')` + `lipSync.stop()`（`aa=0`）
+  - セッション切断時: `lipSync.stop()` + 待機モーション再開
+- [ ] 動作確認:
+  - ウェイクワード後に話しかけると、AI音声が再生される
+  - AI応答中にアバターの口が音声に連動して動く
+  - ユーザー発話中・アイドル中は口が閉じたまま
+  - 体は対話中ずっと静止（spring bone微動のみ）
 
 ### 成果物
 
 ```
-js/main.js（更新）
+js/main.js（更新）, js/lip-sync.js
 ```
 
 ---
@@ -387,7 +409,7 @@ Phase 1 (スキャフォールド)
                           └─→ Phase 12 (エラー処理・調整）
 ```
 
-> **【スコープ外】** リップシンク・能動的アクションは実装しない。
+> **【スコープ外】** 能動的アクションは実装しない。リップシンクはPhase 5で実装する。
 
 ## 全体スケジュール目安
 
@@ -397,7 +419,7 @@ Phase 1 (スキャフォールド)
 | Phase 2 | 大 | Three.js + VRMの初期表示。最も技術的に重い |
 | Phase 3 | 中 | WebSocketプロトコルの実装 |
 | Phase 4 | 中 | Web Speech API + セッションライフサイクル |
-| Phase 5 | 小 | 音声再生のみ（リップシンクはスコープ外） |
+| Phase 5 | 中 | 音声再生 + リップシンク（AnalyserNode → VRM `aa`、AI応答中のみ） |
 | Phase 6 | 小 | 正規表現パース + マッピング |
 | Phase 7 | 小 | DOM更新のみ |
 | Phase 8 | 小 | `get_current_time` のみ実装 |
@@ -416,4 +438,5 @@ Phase 1 (スキャフォールド)
 4. **Live API仕様変更リスク**: プロトコル・音声名は2026年7月時点の仕様。実装時に最新ドキュメントを確認
 5. **HTTPS必須**: マイク・Web Speech API使用のため。ローカル開発は `localhost` または `127.0.0.1`
 6. **ブラウザ互換性**: Chrome系を主要ターゲット。Safari/FirefoxはフォールバックUIで対応
-7. **スコープ外機能の遵守**: spec.md 1.3節に基づき、VRMインポート・リップシンク・`get_current_time` 以外のファンクションコーリング・日本語/英語以外の多言語対応・無料枠警告・能動的アクションは本バージョンでは実装しない
+7. **スコープ外機能の遵守**: spec.md 1.3節に基づき、VRMインポート・`get_current_time` 以外のファンクションコーリング・日本語/英語以外の多言語対応・無料枠警告・能動的アクションは本バージョンでは実装しない。**リップシンクは実装する**（Phase 5）
+8. **対話中のアニメーション制御**: 対話セッション中（ユーザー発話中・AI応答中・対話アイドル）はアニメーションを停止し静止（spring bone微動のみ）。AI応答中はリップシンクで口のみ動かす。感情タグ検出時のみ静止制御より優先してVRMA再生

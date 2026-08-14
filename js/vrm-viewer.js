@@ -24,6 +24,7 @@ import {
   EMOTION_TO_VRMA,
   IDLE_MOTION_POOL,
   VRMA_CROSSFADE_SEC,
+  CONVERSATION_BASE_POSE,
   CAMERA_DISTANCE,
   CAMERA_HEIGHT,
   CAMERA_TARGET_HEIGHT,
@@ -412,6 +413,60 @@ export class VrmViewer {
       return;
     }
     this.playVrma(vrmaKey, { loop: false, isIdle: false });
+  }
+
+  /* =======================================================================
+   * 対話中のアニメーション制御（spec.md 2.3.5「対話中のアニメーション制御」準拠）
+   * ======================================================================= */
+
+  /**
+   * 対話セッション中のアバター状態を設定する。
+   *
+   * いずれの状態でも「自然な立位ポーズ（VRMA_06: Model pose / relaxed）」を
+   * フリーズ再生（paused=true）して保持し、Tポーズを回避する。
+   * spring boneは引き続き微動するため「生きている感」は維持される。
+   * AI応答中（speaking）はリップシンク（lip-sync.js）が口の動きを担う。
+   *
+   * @param {'listening'|'speaking'|'idle'} state
+   *   - listening: ユーザー発話中（静止・聞き手に徹する）
+   *   - speaking:  AI応答中（静止 + リップシンクのみ）
+   *   - idle:      対話アイドル（静止）
+   */
+  setConversationState(state) {
+    const clip = this.vrmaClips[CONVERSATION_BASE_POSE];
+    if (!clip || !this.mixer) {
+      // フォールバック: VRMA_06未ロード時は従来通り停止（Tポーズになる可能性あり）
+      console.warn("[VrmViewer] ベースポーズ未ロード:", CONVERSATION_BASE_POSE, "— 停止のみ");
+      this._stopAllActions();
+      this.animState.isIdle = false;
+      this.animState.lastIdleKey = null;
+      return;
+    }
+
+    // 既存アニメーションを停止
+    this._stopAllActions();
+
+    // ベースポーズを再生し即座にフリーズ（自然な立位を保持）
+    const action = this.mixer.clipAction(clip);
+    action.setLoop(THREE.LoopOnce, 1);
+    action.clampWhenFinished = true;
+    action.reset();
+    action.play();
+    action.paused = true; // フリーズして自然な立位を保持
+
+    this.animState.currentAction = action;
+    this.animState.currentVrmaKey = CONVERSATION_BASE_POSE;
+    this.animState.isIdle = false;
+    this.animState.lastIdleKey = null;
+    console.log("[VrmViewer] 対話状態:", state, "（静止: ベースポーズ", CONVERSATION_BASE_POSE, "）");
+  }
+
+  /**
+   * 対話セッション終了時、ウェイクワード待機に戻り待機モーションを再開する
+   */
+  resumeIdleMotion() {
+    console.log("[VrmViewer] 待機モーション再開");
+    this.startIdleMotion();
   }
 
   /* =======================================================================
