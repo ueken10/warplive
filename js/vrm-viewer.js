@@ -22,6 +22,7 @@ import {
   ASSETS_BASE,
   VRMA_PATHS,
   EMOTION_TO_VRMA,
+  EMOTION_TO_EXPRESSION,
   IDLE_MOTION_POOL,
   VRMA_CROSSFADE_SEC,
   CONVERSATION_BASE_POSE,
@@ -403,8 +404,8 @@ export class VrmViewer {
    * ======================================================================= */
 
   /**
-   * 感情タグに対応するアニメーションを再生
-   * @param {string} emotion  neutral/joy/angry/sorrow/fun/surprised/greeted
+   * 感情タグに対応するアニメーションを再生し、VRM表情を設定
+   * @param {string} emotion  neutral/happy/angry/sad/relaxed/surprised
    */
   playEmotion(emotion) {
     const vrmaKey = EMOTION_TO_VRMA[emotion];
@@ -412,6 +413,21 @@ export class VrmViewer {
       console.warn(`[VrmViewer] 未知の感情タグ: ${emotion}`);
       return;
     }
+
+    // VRM表情（blendShape）を設定
+    const expression = EMOTION_TO_EXPRESSION[emotion];
+    if (expression && this.vrm?.expressionManager) {
+      // 全表情をリセットしてから対象の表情を設定
+      this.vrm.expressionManager.setValue("NEUTRAL", 0);
+      this.vrm.expressionManager.setValue("JOY", 0);
+      this.vrm.expressionManager.setValue("ANGRY", 0);
+      this.vrm.expressionManager.setValue("SORROW", 0);
+      this.vrm.expressionManager.setValue("FUN", 0);
+      this.vrm.expressionManager.setValue("SURPRISED", 0);
+      this.vrm.expressionManager.setValue(expression, 1);
+    }
+
+    // VRMAアニメーションを再生
     this.playVrma(vrmaKey, { loop: false, isIdle: false });
   }
 
@@ -422,7 +438,7 @@ export class VrmViewer {
   /**
    * 対話セッション中のアバター状態を設定する。
    *
-   * いずれの状態でも「自然な立位ポーズ（VRMA_06: Model pose / relaxed）」を
+   * いずれの状態でも「自然な立位ポーズ(CONVERSATION_BASE_POSE)」を
    * フリーズ再生（paused=true）して保持し、Tポーズを回避する。
    * spring boneは引き続き微動するため「生きている感」は維持される。
    * AI応答中（speaking）はリップシンク（lip-sync.js）が口の動きを担う。
@@ -435,7 +451,7 @@ export class VrmViewer {
   setConversationState(state) {
     const clip = this.vrmaClips[CONVERSATION_BASE_POSE];
     if (!clip || !this.mixer) {
-      // フォールバック: VRMA_06未ロード時は従来通り停止（Tポーズになる可能性あり）
+      // フォールバック: CONVERSATION_BASE_POSE未ロード時は従来通り停止（Tポーズになる可能性あり）
       console.warn("[VrmViewer] ベースポーズ未ロード:", CONVERSATION_BASE_POSE, "— 停止のみ");
       this._stopAllActions();
       this.animState.isIdle = false;

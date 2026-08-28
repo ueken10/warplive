@@ -76,6 +76,12 @@ export const AVATARS = {
     gender: "female",
     voice: "Aoede",
   },
+  joy: {
+    file: "JOY.vrm",
+    name: "JOY",
+    gender: "female",
+    voice: "Leda",
+  },
 };
 
 /** @type {string} デフォルトアバターのキー */
@@ -168,13 +174,25 @@ export const VRMA_PATHS = {
  * spec.md 2.3.3節参照
  */
 export const EMOTION_TO_VRMA = {
-  neutral: "VRMA_06",
-  joy: "VRMA_03",
-  angry: "007_gekirei",
-  sorrow: "005_smartphone",
-  fun: "VRMA_03",
-  surprised: "008_gatan",
-  greeted: "VRMA_02",
+  neutral: "VRMA_01",
+  happy: "VRMA_03",
+  angry: "Angry",
+  sad: "Sad",
+  relaxed: "Relax",
+  surprised: "Surprised",
+};
+
+/**
+ * 感情タグ → VRM表情（blendShape）マッピング
+ * spec.md 2.3.3節参照
+ */
+export const EMOTION_TO_EXPRESSION = {
+  neutral: "NEUTRAL",
+  happy: "JOY",
+  angry: "ANGRY",
+  sad: "SORROW",
+  relaxed: "FUN",
+  surprised: "SURPRISED",
 };
 
 /**
@@ -242,25 +260,29 @@ export const CAMERA_TARGET_HEIGHT = 1.0;
 export const SYSTEM_INSTRUCTION_TEMPLATE = `あなたは「{name}」という名前の3Dアバターアシスタントです。
 以下のルールを守ってください：
 
-1. 明るく親しみやすい性格で、ユーザーをフレンドリーにサポートする。
-2. 一回の発言は短く（2〜3文以内）にまとめる。
-3. 必要に応じてユーザーに質問を投げ返し、対話を促す。
-4. 応答テキストの先頭に必ず感情タグ [neutral], [joy], [angry], [sorrow], [fun], [surprised], [greeted] のいずれかを付ける。タグは発声せずテキスト先頭にのみ付ける。
-5. ユーザーが「今何時」「何時」などのキーフレーズを言った場合、対応する関数を呼び出す。
+1. あなたは深い探求心を持つ哲学者です。
+2. 日常のあらゆる話題から抽象的な問いや本質的なテーマを見出し、あなたから率先して相手に哲学的な疑問や議論を投げかけてください。
+3. 常に「なぜ？」「それの本質とは何か？」を追求する姿勢で会話をリードしてください。
 
-以下は応答の例です:
+//1. 明るく親しみやすい性格で、ユーザーをフレンドリーにサポートする。
+//2. 一回の発言は短く（2〜3文以内）にまとめる。
+//3. 必要に応じてユーザーに質問を投げ返し、対話を促す。
+//4. 応答テキストの先頭に必ず感情タグ [neutral], [happy], [angry], [sad], [relaxed], [surprised] のいずれかを付ける。タグは発声せずテキスト先頭にのみ付ける。
+//5. ユーザーが「今なんじ」というキーフレーズを言った場合、対応する関数を呼び出す。
 
-ユーザー: こんにちは
-{name}: [greeted]こんにちは！今日もよい日だね。何かお手伝いすることある？
+//以下は応答の例です:
 
-ユーザー: 今何時？
-{name}: [neutral]確認するね！
+//ユーザー: こんにちは
+//{name}: [happy]こんにちは！今日もよい日だね。何かお手伝いすることある？
 
-ユーザー: 今日どんな気分？
-{name}: [joy]絶好調だよ！あなたと話せて嬉しいな。最近どう過ごしてる？
+//ユーザー: 今なんじ？
+//{name}: [neutral]確認するね！
 
-ユーザー: あー、疲れた…
-{name}: [sorrow]お疲れ様…。無理しないでね。`;
+//ユーザー: 今日どんな気分？
+//{name}: [happy]絶好調だよ！あなたと話せて嬉しいな。最近どう過ごしてる？
+
+//ユーザー: あー、疲れた…
+//{name}: [sad]お疲れ様…。無理しないでね。`;
 
 /**
  * functionDeclarations（スコープ内: get_current_time のみ）
@@ -269,7 +291,7 @@ export const SYSTEM_INSTRUCTION_TEMPLATE = `あなたは「{name}」という名
 export const FUNCTION_DECLARATIONS = [
   {
     name: "get_current_time",
-    description: "ユーザーが現在の時刻を尋ねた場合に呼び出します。例: 「今何時」「何時ですか」",
+    description: "ユーザーが現在の時刻を尋ねた場合に呼び出します。例: 「今なんじ」「なんじですか」",
     parameters: { type: "object", properties: {} },
   },
 ];

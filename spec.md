@@ -23,13 +23,13 @@ Gemini Live APIと連携し、音声で対話できる3D VRMアバターアシ�
 | VRMアバター | `assets/asaka_lily.vrm` | デフォルトアバター（リリ） |
 | VRMアバター | `assets/miura_luca.vrm` | 切替用アバター |
 | VRMアバター | `assets/matsuda_emma.vrm` | 切替用アバター |
-| VRMAアニメーション | `assets/vrma/VRMA_01.vrma` | Show full body（neutral） |
-| VRMAアニメーション | `assets/vrma/VRMA_02.vrma` | Greeting（sad） |
-| VRMAアニメーション | `assets/vrma/VRMA_03.vrma` | Peace sign（happy） |
-| VRMAアニメーション | `assets/vrma/VRMA_04.vrma` | Shoot（angry） |
-| VRMAアニメーション | `assets/vrma/VRMA_05.vrma` | Spin（surprised） |
-| VRMAアニメーション | `assets/vrma/VRMA_06.vrma` | Model pose（relaxed） |
-| VRMAアニメーション | `assets/vrma/VRMA_07.vrma` | Squat（excited） |
+| VRMAアニメーション | `assets/vrma/VRMA_01.vrma` | Show full body |
+| VRMAアニメーション | `assets/vrma/VRMA_02.vrma` | Greeting |
+| VRMAアニメーション | `assets/vrma/VRMA_03.vrma` | Peace sign |
+| VRMAアニメーション | `assets/vrma/VRMA_04.vrma` | Shoot |
+| VRMAアニメーション | `assets/vrma/VRMA_05.vrma` | Spin |
+| VRMAアニメーション | `assets/vrma/VRMA_06.vrma` | Model pose |
+| VRMAアニメーション | `assets/vrma/VRMA_07.vrma` | Squat |
 | VRMAアニメーション | `assets/vrma/001_motion_pose.vrma` | ポーズをとりながらムーブ |
 | VRMAアニメーション | `assets/vrma/002_dogeza.vrma` | 土下座 |
 | VRMAアニメーション | `assets/vrma/003_humidai.vrma` | 踏み台昇降 |
@@ -161,8 +161,8 @@ Live API音声出力を振幅解析し、VRM口形状（`aa`）にマッピン�
 | 項目 | 仕様 |
 | ------ | ------ |
 | 方式 | AI応答テキストの先頭に `[emotion]` タグを付与 |
-| 対応感情 | `neutral`, `joy`, `angry`, `sorrow`, `fun`, `surprised`, `greeted` |
-| タグ形式 | 例: `[joy]こんにちは！今日もいい天気ですね。` |
+| 対応感情 | `neutral`, `happy`, `angry`, `sad`, `relaxed`, `surprised` |
+| タグ形式 | 例: `[happy]こんにちは！今日もいい天気ですね。` |
 | 抽出方法 | `output_audio_transcription` のテキストから正規表現 `^\[(\w+)\]` で抽出 |
 | 字幕表示 | タグを除去したテキストを字幕として表示 |
 
@@ -172,22 +172,21 @@ AIに対するsystem instructionに以下を含める：
 
 ```
 感情表現として、応答テキストの先頭に必ず以下のいずれかのタグを付けてください。
-タグは [neutral], [joy], [angry], [sorrow], [fun], [surprised], [greeted] のいずれかです。
+タグは [neutral], [happy], [angry], [sad], [relaxed], [surprised] のいずれかです。
 タグは発声せず、テキストの先頭にのみ付けてください。
-例: [joy]こんにちは！
+例: [happy]こんにちは！
 ```
 
 #### 2.3.3 感情 → 表情・アニメーション マッピング
 
 | 感情タグ | VRM表情 (blendShape) | VRMAアニメーション |
 | ---------- | ---------------------- | ------------------- |
-| `[neutral]` | neutral（デフォルト） | VRMA_06 (Model pose) |
-| `[joy]` | happy | VRMA_03 (Peace sign) |
-| `[angry]` | angry | 007_gekirei (激励＆激怒) |
-| `[sorrow]` | sad | 005_smartphone (スマホを弄って拗ねる) |
-| `[fun]` | relaxed | VRMA_03 (Peace sign) |
-| `[surprised]` | surprised | 008_gatan (驚いてガタンと立ち上がる) |
-| `[greeted]` | happy | VRMA_02 (Greeting) |
+| `[neutral]` | NEUTRAL（デフォルト） | VRMA_01フリーズ再生 |
+| `[happy]` | JOY | VRMA_03 |
+| `[angry]` | ANGRY | Angry |
+| `[sad]` | SORROW | Sad |
+| `[relaxed]` | FUN | Relax |
+| `[surprised]` | SURPRISED | Surprised |
 
 #### 2.3.4 アニメーション遷移
 
@@ -294,7 +293,7 @@ Live APIの `setup` メッセージの `tools` で以下の関数を定義する
 - `Math.random()` で 0(グー) / 1(チョキ) / 2(パー) を選択
 - AIの手を `toolResponse` として返却
 - AIが結果を発話（「グー！...あなたの勝ち！」等）
-- アバターは `[joy]` 表情 + VRMA_04 (Shoot) を再生
+- アバターは `[happy]` 表情 + VRMA_04 (Shoot) を再生
 
 ### 2.5 字幕表示
 
@@ -453,22 +452,22 @@ Live APIの `setup` メッセージの `tools` で以下の関数を定義する
 1. 明るく親しみやすい性格で、ユーザーをフレンドリーにサポートする。
 2. 一回の発言は短く（2〜3文以内）にまとめる。
 3. 必要に応じてユーザーに質問を投げ返し、対話を促す。
-4. 応答テキストの先頭に必ず感情タグ [neutral], [joy], [angry], [sorrow], [fun], [surprised], [greeted] のいずれかを付ける。タグは発声せずテキスト先頭にのみ付ける。
+4. 応答テキストの先頭に必ず感情タグ [neutral], [happy], [angry], [sad], [relaxed], [surprised] のいずれかを付ける。タグは発声せずテキスト先頭にのみ付ける。
 5. ユーザーが「今何時」「天気」「タイマー」「アラーム」「ポモドーロ」「最初はグー」などのキーフレーズを言った場合、対応する関数を呼び出す。
 
 以下は応答の例です:
 
 ユーザー: こんにちは
-{name}: [greeted]こんにちは！今日もよい日だね。何かお手伝いすることある？
+{name}: [happy]こんにちは！今日もよい日だね。何かお手伝いすることある？
 
 ユーザー: 3分タイマーかけて
-{name}: [fun]3分だね、了解！すぐセットするね。終わったら教えるよ。
+{name}: [relaxed]3分だね、了解！すぐセットするね。終わったら教えるよ。
 
 ユーザー: 今日どんな気分？
-{name}: [joy]絶好調だよ！あなたと話せて嬉しいな。最近どう過ごしてる？
+{name}: [happy]絶好調だよ！あなたと話せて嬉しいな。最近どう過ごしてる？
 
 ユーザー: あー、疲れた…
-{name}: [sorrow]お疲れ様…。無理しないでね。
+{name}: [sad]お疲れ様…。無理しないでね。
 ```
 
 ※`{name}` は選択中のアバター名（リリ / エマ / ルカ）に置換される。Few-shot例は感情タグの適切な選択、2〜3文の応答長、関数呼び出しの自然な判定をモデルに学習させる目的で挿入。例は日本語ベースだが、言語切替時はsystem instructionの言語に合わせて動的生成する。

@@ -54,7 +54,7 @@ index.html, css/style.css, js/config.js, js/main.js
   - Three.js / three-vrm / three-vrm-animation のCDN URL
   - アバターファイルパス（3体）
   - VRMAファイルパス（15種: VRMA_01〜07 + 001〜008）
-  - 感情→VRMAマッピング表（neutral→VRMA_06, joy→VRMA_03, angry→007_gekirei, sorrow→005_smartphone, fun→VRMA_03, surprised→008_gatan, greeted→VRMA_02, sorry→002_dogeza）
+  - 感情→VRMAマッピング表（neutral→VRMA_01, happy→VRMA_03, angry→Angry, sad→Sad, relaxed→Relax, surprised→Surprised）
   - 待機モーションプール（VRMA_01, VRMA_05, VRMA_07, 001_motion_pose, 003_humidai 計5種）
   - アバター別設定（名前・性別・ウェイクワード・ペルソナ・音声）
 - [ ] `js/vrm-viewer.js` 作成
@@ -195,7 +195,7 @@ js/main.js（更新）, js/lip-sync.js
   - `parseEmotion(text)` 関数: 正規表現 `^\[(\w+)\]` で感情タグ抽出
   - `stripEmotionTag(text)` 関数: タグ除去後のテキストを返却
   - `applyEmotion(emotion, vrmViewer)` 関数: 感情 → VRM表情 + VRMAアニメーション切替
-  - 対応感情タグ: `neutral`, `joy`, `angry`, `sorrow`, `fun`, `surprised`, `greeted`, `sorry`（8種）
+  - 対応感情タグ: `neutral`, `happy`, `angry`, `sad`, `relaxed`, `surprised`（6種）
   - 感情→表情・アニメーションマッピング（config.jsの定数を参照）
 - [ ] `js/main.js` の `onTranscription` 処理に感情タグ解析を組み込み
   - 感情タグ抽出 → `applyEmotion()` 呼び出し
