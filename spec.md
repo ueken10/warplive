@@ -854,6 +854,8 @@ speechSynthesis.speak(utterance);
 
 6. **無料枠の正確な把握**: Gemini Live APIの無料枠制限は時期によって変動する。`config.js`の閾値は目安であり、実際の制限はGoogleのドキュメントで最新確認が必要。
 
+7. **Windows PCでのビープ音問題**: Windows PCで実行すると、AI音声の途中にときどきビープ音が鳴る現象が確認されている。原因は不明だがWindows固有の問題と考えられる。対策として、AndroidスマホやiPadで実行すること。
+
 ---
 
 ## 11. 今後の拡張候補（本仕様のスコープ外）
