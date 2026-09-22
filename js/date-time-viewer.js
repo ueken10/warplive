@@ -34,8 +34,8 @@ export class DateTimeViewer {
 
     // 日付・時刻テキスト用キャンバス
     this.textCanvas = document.createElement("canvas");
-    this.textCanvas.width = 1024;
-    this.textCanvas.height = 512;
+    this.textCanvas.width = 640;
+    this.textCanvas.height = 320;
     /** @type {CanvasRenderingContext2D} */
     this.ctx = /** @type {CanvasRenderingContext2D} */ (this.textCanvas.getContext("2d"));
 
@@ -48,8 +48,8 @@ export class DateTimeViewer {
       opacity: 0.95,
     });
     this.textSprite = new THREE.Sprite(spriteMaterial);
-    this.textSprite.scale.set(2.4, 1.2, 1);
-    this.textSprite.position.set(0, 1.05, 0);
+    this.textSprite.scale.set(1.5, 0.75, 1);
+    this.textSprite.position.set(0, 1.0, 0);
     this.group.add(this.textSprite);
 
     // 回転するサイバーパンク風立体
@@ -138,10 +138,10 @@ export class DateTimeViewer {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    ctx.font = 'bold 84px "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+    ctx.font = 'bold 52px "Segoe UI", "Helvetica Neue", Arial, sans-serif';
     ctx.fillText(dateStr, w / 2, h * 0.32);
 
-    ctx.font = 'bold 152px "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+    ctx.font = 'bold 96px "Segoe UI", "Helvetica Neue", Arial, sans-serif';
     ctx.fillText(timeStr, w / 2, h * 0.68);
 
     // セパレータライン
@@ -151,6 +151,7 @@ export class DateTimeViewer {
     ctx.beginPath();
     ctx.moveTo(w * 0.2, h * 0.55);
     ctx.lineTo(w * 0.8, h * 0.55);
+    ctx.lineWidth = 3;
     ctx.stroke();
 
     this.texture.needsUpdate = true;
