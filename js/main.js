@@ -13,11 +13,14 @@ import {
   STORAGE_KEY_API_KEY,
   STORAGE_KEY_LANGUAGE,
   STORAGE_KEY_AVATAR,
+  STORAGE_KEY_MODE,
+  MODE_DATETIME,
   AVATARS,
   WAKE_WORDS_BY_LANG,
   IDLE_TIMEOUT_SEC,
 } from "./config.js";
 import { VrmViewer } from "./vrm-viewer.js";
+import { DateTimeViewer } from "./date-time-viewer.js";
 import { GeminiLive } from "./gemini-live.js";
 import { WakeWordManager } from "./wake-word.js";
 import { LipSync } from "./lip-sync.js";
@@ -37,6 +40,7 @@ import { LipSync } from "./lip-sync.js";
 const state = {
   apiKey: "",
   avatarKey: DEFAULT_AVATAR_KEY,
+  mode: DEFAULT_AVATAR_KEY,
   language: DEFAULT_LANGUAGE,
   subtitleVisible: true,
   clockVisible: true,
@@ -45,6 +49,12 @@ const state = {
 
 /** @type {VrmViewer|null} */
 let vrmViewer = null;
+
+/** @type {DateTimeViewer|null} */
+let dateTimeViewer = null;
+
+/** @type {VrmViewer|DateTimeViewer|null} */
+let activeViewer = null;
 
 /** @type {GeminiLive|null} */
 let geminiLive = null;
@@ -250,7 +260,7 @@ const els = {
   status: /** @type {HTMLElement} */ (document.getElementById("status")),
   apiKeyInput: /** @type {HTMLInputElement} */ (document.getElementById("api-key-input")),
   apiKeyToggle: /** @type {HTMLButtonElement} */ (document.getElementById("api-key-toggle")),
-  avatarSelect: /** @type {HTMLSelectElement} */ (document.getElementById("avatar-select")),
+  modeSelect: /** @type {HTMLSelectElement} */ (document.getElementById("mode-select")),
   languageSelect: /** @type {HTMLSelectElement} */ (document.getElementById("language-select")),
   micButton: /** @type {HTMLButtonElement} */ (document.getElementById("mic-button")),
 };
@@ -413,17 +423,32 @@ function bindEvents() {
     els.apiKeyToggle.classList.toggle("visible", isHidden);
   });
 
-  // アバター選択
-  els.avatarSelect.addEventListener("change", () => {
-    state.avatarKey = els.avatarSelect.value;
-    saveStorage(STORAGE_KEY_AVATAR, state.avatarKey);
-    // アバター切替（ウェイクワードはアバター共通のため変更なし）
-    const avatar = AVATARS[state.avatarKey];
-    if (avatar && vrmViewer) {
-      vrmViewer.switchAvatar(avatar.file).catch((err) => {
-        console.error("[WarpLive] アバター切替エラー:", err);
-        setStatus("⚠ エラー — VRMファイルの読み込みに失敗しました");
-      });
+  // 機能選択
+  els.modeSelect.addEventListener("change", () => {
+    const value = els.modeSelect.value;
+    if (value === MODE_DATETIME) {
+      state.mode = value;
+      saveStorage(STORAGE_KEY_MODE, value);
+      if (vrmViewer) vrmViewer.hide();
+      if (dateTimeViewer) dateTimeViewer.show();
+      activeViewer = dateTimeViewer;
+    } else {
+      state.avatarKey = value;
+      state.mode = value;
+      saveStorage(STORAGE_KEY_AVATAR, value);
+      saveStorage(STORAGE_KEY_MODE, value);
+      if (dateTimeViewer) dateTimeViewer.hide();
+      if (vrmViewer) {
+        vrmViewer.show();
+        const avatar = AVATARS[value];
+        if (avatar) {
+          vrmViewer.switchAvatar(avatar.file).catch((err) => {
+            console.error("[WarpLive] アバター切替エラー:", err);
+            setStatus("⚠ エラー — VRMファイルの読み込みに失敗しました");
+          });
+        }
+      }
+      activeViewer = vrmViewer;
     }
   });
 
@@ -858,11 +883,11 @@ function endLiveSession() {
 
 /** レンダリングループ */
 function renderLoop(timestamp) {
-  if (!vrmViewer) return;
+  if (!activeViewer) return;
   if (lastFrameTime === 0) lastFrameTime = timestamp;
   const deltaSec = (timestamp - lastFrameTime) / 1000;
   lastFrameTime = timestamp;
-  vrmViewer.update(deltaSec);
+  activeViewer.update(deltaSec);
   rafId = requestAnimationFrame(renderLoop);
 }
 
@@ -874,6 +899,7 @@ async function initVrmViewer() {
     return;
   }
   vrmViewer = new VrmViewer(canvas);
+  dateTimeViewer = new DateTimeViewer(vrmViewer.scene, vrmViewer.camera, vrmViewer.renderer);
 
   // リップシンク初期化（VRMロード後に使用可能）
   lipSync = new LipSync(vrmViewer);
@@ -897,13 +923,24 @@ async function initVrmViewer() {
     // デフォルトアバターにフォールバック
     if (state.avatarKey !== DEFAULT_AVATAR_KEY) {
       state.avatarKey = DEFAULT_AVATAR_KEY;
-      els.avatarSelect.value = DEFAULT_AVATAR_KEY;
+      state.mode = DEFAULT_AVATAR_KEY;
+      els.modeSelect.value = DEFAULT_AVATAR_KEY;
       try {
         await vrmViewer.loadVRM(AVATARS[DEFAULT_AVATAR_KEY].file);
       } catch (e) {
         console.error("[WarpLive] デフォルトVRMロードも失敗:", e);
       }
     }
+  }
+
+  // 初期表示モードを反映
+  if (state.mode === MODE_DATETIME && dateTimeViewer) {
+    vrmViewer.hide();
+    dateTimeViewer.show();
+    activeViewer = dateTimeViewer;
+  } else {
+    vrmViewer.show();
+    activeViewer = vrmViewer;
   }
 
   // レンダリングループ開始
@@ -919,16 +956,21 @@ function init() {
   // 保存済み設定の読込
   state.apiKey = loadStorage(STORAGE_KEY_API_KEY, "");
   state.avatarKey = loadStorage(STORAGE_KEY_AVATAR, DEFAULT_AVATAR_KEY);
+  state.mode = loadStorage(STORAGE_KEY_MODE, state.avatarKey);
   state.language = loadStorage(STORAGE_KEY_LANGUAGE, DEFAULT_LANGUAGE);
 
   // UIに反映
   els.apiKeyInput.value = state.apiKey;
-  if (els.avatarSelect.querySelector(`option[value="${state.avatarKey}"]`)) {
-    els.avatarSelect.value = state.avatarKey;
-  } else {
-    els.avatarSelect.value = DEFAULT_AVATAR_KEY;
+  let initialMode = state.mode;
+  if (initialMode !== MODE_DATETIME && !AVATARS[initialMode]) {
+    initialMode = state.avatarKey;
+  }
+  if (!els.modeSelect.querySelector(`option[value="${initialMode}"]`)) {
+    initialMode = DEFAULT_AVATAR_KEY;
     state.avatarKey = DEFAULT_AVATAR_KEY;
   }
+  state.mode = initialMode;
+  els.modeSelect.value = state.mode;
   if (els.languageSelect.querySelector(`option[value="${state.language}"]`)) {
     els.languageSelect.value = state.language;
   } else {

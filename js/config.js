@@ -114,6 +114,12 @@ export const STORAGE_KEY_AVATAR = "warplive:avatar";
 /** @type {string} ローカルストレージのウェイクワード保存キー */
 export const STORAGE_KEY_WAKE_WORD = "warplive:wakeWord";
 
+/** @type {string} ローカルストレージの表示モード保存キー */
+export const STORAGE_KEY_MODE = "warplive:mode";
+
+/** @type {string} 日時表示モードの識別子 */
+export const MODE_DATETIME = "datetime";
+
 /* =========================================================================
  * Phase 2: 3Dアバター表示関連
  * ========================================================================= */
